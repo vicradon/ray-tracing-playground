@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ray Tracing Playground</title>
+<style>
+:root{--bg:#f6f7fb;--fg:#1c2233;--card:#fff;--grid:#e4e7ef;--axis:#777;--img:#c2410c;--bd:#d5d9e5;--ac:#3b4b7a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151f;--fg:#e6e9f4;--card:#1b2030;--grid:#2a3042;--axis:#8a93ad;--img:#ff9a5c;--bd:#323955;--ac:#7f93d6}}
+:root[data-theme="dark"]{--bg:#12151f;--fg:#e6e9f4;--card:#1b2030;--grid:#2a3042;--axis:#8a93ad;--img:#ff9a5c;--bd:#323955;--ac:#7f93d6}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:12px}
+h1{font-size:18px;margin:4px 0 10px}h2{font-size:14px;margin:0 0 4px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+select,input,button{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:4px 8px}
+button{cursor:pointer}button.on{background:var(--ac);color:#fff}
+input[type=number]{width:64px}input[type=checkbox]{padding:0}
+canvas{width:100%;display:block;background:var(--card);border:1px solid var(--bd);border-radius:8px;touch-action:none}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-top:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0}
+.muted{opacity:.75;font-size:13px}
+button:disabled{opacity:.4;cursor:default}
+.tb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 8px}
+.grp{display:flex;gap:4px;align-items:center}.sep{width:1px;align-self:stretch;background:var(--bd)}.grow{flex:1}
+.lbl{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.05em;margin-right:2px}
+.tb button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 8px;min-width:38px}
+.tb button small{font-size:10px;opacity:.85;line-height:1}
+.tb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+.pal button{cursor:grab}.small button{padding:3px 6px;opacity:.85;cursor:grab}.small svg{width:16px;height:16px}
+.mb{display:flex;gap:2px;align-items:center;margin-bottom:6px}.mb .seg{margin-left:auto}
+.mb button{border:0;background:none;padding:3px 10px;border-radius:6px}.mb button:hover{background:var(--grid)}
+#ctx hr{border:0;border-top:1px solid var(--bd);margin:4px 0}#ctx .k{float:right;opacity:.6;margin-left:18px;font-size:12px}
+#mdl{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
+.mc{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;min-width:300px;max-width:600px;width:92%;max-height:82vh;overflow:auto}.mc h2{font-size:15px;margin:0 0 8px}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ac);color:#fff;padding:6px 14px;border-radius:8px;display:none;z-index:30}
+.cfgrow{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}.cfgrow img{width:90px;border:1px solid var(--bd);border-radius:4px}.cfgrow .nm{flex:1;word-break:break-word}
+#ctx{position:fixed;z-index:9;display:none;min-width:190px;background:var(--card);border:1px solid var(--bd);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);padding:4px}
+#ctx div{padding:5px 10px;border-radius:5px;cursor:pointer}#ctx div:hover{background:var(--ac);color:#fff}#ctx .h{opacity:.6;cursor:default;font-size:12px}#ctx div.sws{display:flex;gap:7px;padding:6px 10px;cursor:default}#ctx div.sws:hover{background:none;color:inherit}#ctx .sws i{width:20px;height:20px;border-radius:50%;box-sizing:border-box;border:2px solid transparent;cursor:pointer}#ctx .sws i:hover{transform:scale(1.15)}#ctx .sws i.on{border-color:var(--fg)}#ctx .h:hover{background:none;color:inherit}
+
+/* ---- zoom indicator ---- */
+.cvw{position:relative}
+.zoom{position:absolute;right:10px;bottom:10px;background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,.18);opacity:.94}
+.zoom .grp{display:flex;gap:0;padding:0;margin:0}
+.zoom button{border:0;background:none;border-radius:999px;min-width:28px;padding:2px 6px}
+.zoom button:hover:not(:disabled){background:var(--grid)}
+.zoom [data-act=zoomlvl]{min-width:56px;font-variant-numeric:tabular-nums}
+/* ---- mode switcher ---- */
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:999px;padding:2px;background:var(--card)}
+.seg button{border:0;background:none;border-radius:999px;padding:3px 14px}
+.seg button.on{background:var(--ac);color:#fff}
+body.practice .seg{border-color:var(--pc)}body.practice .seg button.on{background:var(--pc)}
+/* ---- practice mode ---- */
+:root{--pc:#d97f00;--pcbg:rgba(224,138,0,.13)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--pc:#ffb347;--pcbg:rgba(255,179,71,.14)}}
+:root[data-theme="dark"]{--pc:#ffb347;--pcbg:rgba(255,179,71,.14)}
+#tbPrac,#prac{display:none}body.practice #tbPrac{display:flex}body.practice #prac{display:block}body.practice #tbSand{display:none}
+.tb .badge{background:var(--pc);color:#fff;font-weight:700;letter-spacing:.06em;font-size:12px;padding:3px 10px;border-radius:999px}
+.tb button .t{font-size:13px;padding:2px 2px}.tb button.primary{background:var(--pc);border-color:var(--pc);color:#fff}
+#tbPrac{border:2px solid var(--pc);background:linear-gradient(var(--pcbg),var(--pcbg)),var(--card)}
+body.practice canvas{border:2px solid var(--pc);box-shadow:0 0 0 3px var(--pcbg)}
+body.practice #prac{border:2px solid var(--pc);background:linear-gradient(var(--pcbg),var(--pcbg)),var(--card)}
+.dis{opacity:.32;filter:grayscale(1);cursor:not-allowed!important}
+body.practice .lockable{opacity:.32;filter:grayscale(1);pointer-events:none;user-select:none}
+body.practice .lockable h2::after{content:" \1F512 locked in practice mode";font-weight:400;font-size:12px}
+#ctx div.d{opacity:.35;cursor:not-allowed}#ctx div.d:hover{background:none;color:inherit}
+</style></head><body><div class="wrap">
+<h1>Ray tracing playground</h1>
+<div class="mb" id="mb"><button data-m="file">File</button><button data-m="edit">Edit</button><button data-m="view">View</button><button data-m="prefs">Preferences</button><button data-m="help">Help</button>
+ <div class="seg" id="modeSw" role="tablist" aria-label="Mode"><button id="mSand" class="on" role="tab" aria-selected="true">Sandbox</button><button id="mPrac" role="tab" aria-selected="false">Practice</button></div></div>
+<div class="tb" id="tbSand"></div>
+<div class="tb" id="tbPrac"></div>
+<div class="cvw"><canvas id="cv"></canvas><div class="zoom" id="zoomUI"></div></div>
+<div class="bar" style="margin-top:8px">
+ <label><input type="checkbox" id="vall" checked> show rays</label>
+ <label><input type="checkbox" id="fp"> focal planes</label>
+ <label><input type="checkbox" id="pl"> object/image planes P, P′</label>
+ <label><input type="checkbox" id="snap" checked> snap to grid</label>
+ <label title="Mirrors: a line drawn from the vertex S snaps to the mirror image of an existing line about the axis. Hold Shift to disable temporarily."><input type="checkbox" id="snapSym" checked> snap to symmetry</label></div>
+<div class="card" id="prac"><h2>Practice feedback</h2>
+ <div id="pfb"></div>
+ <div class="muted">The solution is hidden. Draw your own rays with the Bold line (L) and Construction line (C) tools, place your answer with Mark (X) when finding an image, then Evaluate (E). Construction lines are dotted and infinite, bold lines are solid segments; both snap to F, O, S, C, intersections (also with the focal planes), the lens or mirror itself, the point where the given ray hits the element, and the directions parallel to the axis, parallel to the given ray and through a point. On a mirror, a line started at the vertex S also snaps to the mirror image (about the axis) of a line ending there; hold Shift to turn this off briefly.</div></div>
+<div class="card lockable"><h2>Optical elements</h2><div id="els"></div></div>
+<div class="card lockable"><h2>Objects</h2><div id="objs"></div></div>
+<div class="card lockable"><h2>Rays</h2><div id="rays"></div>
+ <div class="row" id="addr"></div>
+ <div class="muted">Every ray is traced through the elements in order: lens p′ = p − h/f, mirror the same followed by a reversal of direction. Aim a ray at any F, F′, O, S or C of any element, parallel to the axis, or at a free point (drag its handle). Images are found by intersecting the traced output rays of an object (dashed = virtual). Trace ray tool: drag from the object toward the element and release. The ray snaps to O, S, F, F′, C of any element, to parallel-to-axis, to the element at a grid height, or to a grid point. Undo/redo: buttons or Ctrl+Z / Ctrl+Y. Right-click a ray and choose Trace parallel ray to add a ray with the same direction through a point you click. Right-click the canvas to add things or to remove/edit what is under the cursor (elements, objects, rays). Elements are traced from the leftmost; an object to the right of an element acts as a virtual object for it.</div></div>
+<div class="card"><h2>Lines</h2><div id="lns"></div></div>
+<div class="card" id="out"></div><div id="ctx"></div><div id="mdl"><div class="mc"><h2 id="mt"></h2><div id="mbd"></div><div class="row" id="mbt" style="margin-top:10px"></div></div></div><div id="toast"></div><input type="file" id="imp" accept=".json,application/json" hidden>
+</div>
+<script>
+const W=18,H=14,cv=document.getElementById('cv'),cx=cv.getContext('2d'),$=id=>document.getElementById(id);
+
+// ---- toolbars: each control is declared once in CTRL; a toolbar is only a list of groups
+const HOME={z:1,x0:0,y0:H/2},view={...HOME},tol=v=>v/view.z,FAR=2000,clx=v=>Math.max(-500,Math.min(W+500,v)); // FAR: how far rays/lines are drawn; clx: how far elements and objects may be placed; view: zoom factor + world coords of the visible top-left corner; tol(): pick radius in world units that stays constant on screen
+// ---- practice exercises: one declarative catalog. el = [type, x, f] (L lens / M mirror; f<0 means diverging / convex), then either obj = [x, y] or ray = [height at the element, y at x=0]
+const EX=[
+ {id:'conv-far',task:'image',title:'Converging lens: object beyond 2F',el:['L',9,3],obj:[1,2]},
+ {id:'conv-mid',task:'image',title:'Converging lens: object between F and 2F',el:['L',7,3],obj:[2.5,2]},
+ {id:'conv-near',task:'image',title:'Converging lens: object inside F',el:['L',9,3],obj:[7,2]},
+ {id:'diverging',task:'image',title:'Diverging lens',el:['L',9,-3],obj:[3,3]},
+ {id:'conc-far',task:'image',title:'Concave mirror: object beyond C',el:['M',10,3],obj:[1,2]},
+ {id:'conc-mid',task:'image',title:'Concave mirror: object between C and F',el:['M',10,3],obj:[5.5,2]},
+ {id:'conc-near',task:'image',title:'Concave mirror: object inside F',el:['M',10,3],obj:[8.5,2]},
+ {id:'convex',task:'image',title:'Convex mirror',el:['M',10,-3],obj:[3,3]},
+ {id:'ray-conv',task:'ray',title:'Converging lens: oblique ray',el:['L',9,3],ray:[2,-1]},
+ {id:'ray-conv-par',task:'ray',title:'Converging lens: ray parallel to the axis',el:['L',9,3],ray:[2,2]},
+ {id:'ray-div',task:'ray',title:'Diverging lens: oblique ray',el:['L',9,-3],ray:[2,0]},
+ {id:'ray-conc',task:'ray',title:'Concave mirror: oblique ray',el:['M',10,3],ray:[3,1]},
+ {id:'ray-convex',task:'ray',title:'Convex mirror: oblique ray',el:['M',10,-3],ray:[2,-1]},
+ // optical systems (several elements, in light order from the left). Extended object AB: A on the axis, B the tip.
+ {id:'sys-a',grp:'sys-image',task:'image',title:'a) Two converging lenses',els:[['L',4,3],['L',14,3]],obj:[1,3],ext:true},
+ {id:'sys-b',grp:'sys-image',task:'image',title:'b) Two converging lenses, object near F1',els:[['L',5,4],['L',11,4]],obj:[2,3],ext:true},
+ {id:'sys-c',grp:'sys-image',task:'image',title:'c) Converging then diverging lens',els:[['L',6,4],['L',12,-4]],obj:[3,3],ext:true},
+ {id:'sys-d',grp:'sys-image',task:'image',title:'d) Two diverging lenses',els:[['L',8,-7],['L',13,-6]],obj:[2,3],ext:true},
+ {id:'sys-e',grp:'sys-image',task:'image',title:'e) Converging lens and concave mirror',els:[['L',6,6],['M',17,4]],obj:[15,3],ext:true},
+ {id:'sys-f',grp:'sys-image',task:'image',title:'f) Converging lens and convex mirror',els:[['L',9,5],['M',12,-3]],obj:[1,3],ext:true,view:{z:.65,x0:-9,y0:10.77}},
+ {id:'sys-ray-a',grp:'sys-ray',task:'ray',title:'Two converging lenses: oblique ray',els:[['L',5,3],['L',13,3]],ray:[2,-1]},
+ {id:'sys-ray-b',grp:'sys-ray',task:'ray',title:'Converging then diverging lens: oblique ray',els:[['L',5,3],['L',12,-3]],ray:[2,-1]},
+ {id:'sys-ray-c',grp:'sys-ray',task:'ray',title:'Converging lens and concave mirror: ray from the left',els:[['L',5,3],['M',15,4]],ray:[2,0]}];
+const EXGROUPS=[['image','Find the image'],['ray','Find the emerging ray'],['sys-image','Systems: find the image of AB'],['sys-ray','Systems: find the emerging ray']];
+const EXOPTS=EXGROUPS.map(([k,label])=>({label,items:[...EX.filter(e=>(e.grp||e.task)==k).map(e=>[e.id,e.title]),...(k=='image'||k=='ray'?[['rand-'+k,'Random exercise']]:[])]}));
+const exTitle=id=>(EX.find(e=>e.id==id)||{title:'Random exercise'}).title;
+function randomDef(task){const K=[['L',1],['L',-1],['M',1],['M',-1]],[t,sg]=K[Math.floor(Math.random()*4)],f=sg*(3+Math.floor(Math.random()*3)),ex=8+Math.floor(Math.random()*3),d={task,rand:true,el:[t,ex,f]};
+ if(task=='image'){let x,y,n=0;do{x=1+Math.floor(Math.random()*(ex-3));y=1+Math.floor(Math.random()*4);n++}while(n<30&&(Math.abs(x-(ex-f))<.9||Math.abs(x-(ex-2*f))<.9));d.obj=[x,y]}
+ else d.ray=[1+Math.floor(Math.random()*4),Math.floor(Math.random()*7)-1];return d}
+const exerciseDef=id=>EX.find(e=>e.id==id)||randomDef(id=='rand-ray'?'ray':'image');
+const mk=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e};
+const svg=d=>`<svg viewBox="0 0 24 24">${d}</svg>`,setDis=(sel,on)=>document.querySelectorAll(sel).forEach(e=>e.classList.toggle('dis',on));
+const CTRL={
+ undo:{act:'undo',tip:'Undo (Ctrl+Z)',icon:svg('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>'),run:()=>undo()},
+ redo:{act:'redo',tip:'Redo (Ctrl+Y)',icon:svg('<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/>'),run:()=>redo()},
+ move:{tool:'move',tip:'Move / select (M)',icon:svg('<path d="M5 3l14 8-6 2-2 6z"/>')},
+ trace:{tool:'trace',tip:'Trace ray (T): drag from an object toward the elements',icon:svg('<circle cx="5" cy="18" r="2.2"/><path d="M7 16.5L20 6M20 6h-5.5M20 6v5.5"/>')},
+ line:{tool:'line',tip:'Bold line (L or B): solid segment from a start point to an end point. Snaps to special points, intersections, elements and directions',icon:svg('<circle cx=\"5\" cy=\"19\" r=\"2\"/><circle cx=\"19\" cy=\"5\" r=\"2\"/><path stroke-width=\"3.2\" d=\"M6.5 17.5L17.5 6.5\"/>')},
+ cons:{tool:'cons',tip:'Construction line (C): dotted line through two points, extending across the whole canvas. Same snapping as the bold line',icon:svg('<circle cx=\"5\" cy=\"19\" r=\"2\"/><circle cx=\"19\" cy=\"5\" r=\"2\"/><path stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-dasharray=\"0.1 3.4\" d=\"M1 23L23 1\"/>')},
+ mark:{tool:'mark',tip:'Mark answer (X)',icon:svg('<path d="M12 21s-6-6-6-11a6 6 0 0112 0c0 5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/>')},
+ 'L+':{add:'L+',tip:'Converging lens, f>0 (key 1)',label:'Converging',icon:svg('<path d="M12 3v18M8.5 7L12 3l3.5 4M8.5 17L12 21l3.5-4"/>')},
+ 'L-':{add:'L-',tip:'Diverging lens, f<0 (key 2)',label:'Diverging',icon:svg('<path d="M12 7v10M8.5 3.5L12 7l3.5-3.5M8.5 20.5L12 17l3.5 3.5"/>')},
+ 'M+':{add:'M+',tip:'Concave (converging) mirror (key 3)',label:'Concave',icon:svg('<path d="M9 3l5 5v8l-5 5"/><path d="M14 9.5l3.5-3.5M14 13l3.5-3.5M14 16.5l3.5-3.5"/>')},
+ 'M-':{add:'M-',tip:'Convex (diverging) mirror (key 4)',label:'Convex',icon:svg('<path d="M15 3l-5 5v8l5 5"/><path d="M10 9.5l3.5-3.5M10 13l3.5-3.5M10 16.5l3.5-3.5"/>')},
+ P:{add:'P',tip:'Point object (P)',icon:svg('<circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>')},
+ A:{add:'A',tip:'Arrow object (A)',icon:svg('<path d="M12 20V6M7.5 10.5L12 6l4.5 4.5M8 20h8"/>')},
+ preset:{select:'pre'},
+ task:{select:'pex',tip:'Choose the exercise',opts:EXOPTS,change:()=>newExercise($('pex').value)},
+ hint:{act:'hint',id:'pHint',text:'Hint (0/3)',run:()=>hintStep()},
+ show:{act:'show',text:'Show solution',run:()=>{if(practice){if(!practice.revealed){ // the solution rays only exist once revealed
+   if(practice.task=='image'){if(!S.rays.length)S.objs.forEach((_,i)=>principal(i))}
+   else if(!S.rays.some(q=>q.aim.k=='guide'))addRay(-1,{k:'guide',ref:practice.rid})}
+  practice.revealed=true;pracUI();draw()}}},
+ clear:{act:'clear',text:'Clear lines',tip:'Clear my constructions and answer',run:()=>{S.lines=[];if(practice){practice.ans=null;practice.fb=[]}panel();draw()}},
+ next:{act:'next',text:'Next exercise',tip:'Next exercise in this group (a random group draws a new one)',run:()=>nextExercise()},
+ evaluate:{act:'eval',text:'Evaluate (E)',cls:'primary',run:()=>evaluate()},
+ zoomout:{act:'zoomout',text:'\u2212',tip:'Zoom out (\u2212)',run:()=>zoomStep(-1)},
+ zoomlvl:{act:'zoomlvl',text:'100%',tip:'Zoom level: click to reset to 100% (0)',run:()=>zoomReset()},
+ zoomin:{act:'zoomin',text:'+',tip:'Zoom in (+)',run:()=>zoomStep(1)}};
+const TOOLBARS={
+ tbSand:[{items:['preset']},{items:['undo','redo']},{items:['move','trace','line','cons']},{label:'Drag in',cls:'pal',items:['L+','L-','M+','M-']},'grow',{label:'Objects',cls:'pal small',items:['P','A']}],
+ tbPrac:[{badge:'PRACTICE MODE'},{items:['undo','redo']},{items:['move','line','cons','mark']},{items:['task']},'grow',{items:['hint','show','clear','next']},{items:['evaluate']}]};
+function ctrl(c){
+ if(c.select){const e=mk('select');e.id=c.select;const fill=(par,o)=>o.forEach(x=>{if(x.items){const g=mk('optgroup');g.label=x.label;fill(g,x.items);par.appendChild(g)}else par.appendChild(new Option(x[1],x[0]))});fill(e,c.opts||[]);if(c.tip)e.title=c.tip;if(c.change)e.onchange=c.change;return e}
+ const b=mk('button',c.cls||'',(c.icon||'')+(c.label?`<small>${c.label}</small>`:'')+(c.text?`<span class="t">${c.text}</span>`:''));b.title=c.tip||c.text||'';if(c.id)b.id=c.id;
+ if(c.tool){b.dataset.tool=c.tool;b.onclick=()=>setTool(c.tool)}if(c.act){b.dataset.act=c.act;b.onclick=c.run}if(c.add){b.dataset.add=c.add;b.draggable=true}return b}
+function buildToolbar(el,spec){spec.forEach((g,i)=>{
+ if(g==='grow'){el.appendChild(mk('span','grow'));return}if(i&&spec[i-1]!=='grow')el.appendChild(mk('i','sep'));
+ if(g.badge){el.appendChild(mk('span','badge',g.badge));return}
+ const box=mk('div','grp '+(g.cls||''));if(g.label)box.appendChild(mk('span','lbl',g.label));g.items.forEach(n=>box.appendChild(ctrl(CTRL[n])));el.appendChild(box)})}
+for(const id in TOOLBARS)buildToolbar($(id),TOOLBARS[id]);
+buildToolbar($('zoomUI'),[{items:['zoomout','zoomlvl','zoomin']}]);
+let S={els:[],objs:[],rays:[],lines:[]},uid=1,practice=null,mode='sandbox';const WS={sandbox:null,practice:null}; // WS holds the workspace of the mode that is NOT active
+const LC='#9b7bff',LINE_COLORS=[[LC,'Purple (default)'],['#2f6fed','Blue'],['#1f9d55','Green'],['#d64545','Red'],['#e08a00','Orange'],['#6b7280','Gray']];let curId=null,curName=null,savedJ=null,forceW=0,exporting=false;
+const pref=Object.assign({step:.5,theme:'auto',grid:true,light:true,f:3},(()=>{try{return JSON.parse(localStorage.getItem('raylab.prefs'))||{}}catch(e){return{}}})());
+const OC='#4a7dff',COL={dir:'#b58900',at:'#6b7bd6',par:'#4a7dff',O:'#0a8a2a',S:'#0a8a2a',F:'#c04ab0',Fp:'#e08a00',C:'#14a3b8',hit:'#6b7bd6',guide:'#0a8a2a'};
+const P={
+"Single a) converging lens":{o:[[1,4,0]],e:[['L',9,4]]},
+"Single b) diverging lens":{o:[[2,4,0]],e:[['L',9,-4]]},
+"Single c) concave mirror":{o:[[4,3,0]],e:[['M',11,4]]},
+"Single d) convex mirror":{o:[[2,3,0]],e:[['M',9,-4]]},
+"Single e) diverging lens (F' at 6)":{o:[[2,4,0]],e:[['L',9,-3]]},
+"Single f) virtual object, diverging lens":{o:[[17,0,0]],e:[['L',9,-4]]},
+"Ray a) converging lens":{free:[6.3,5],e:[['L',9,4]]},
+"Ray b) diverging lens":{free:[5.2,3.4],e:[['L',9,-4]]},
+"Ray c) concave mirror":{free:[5.2,3.4],e:[['M',9,4]]},
+"Ray d) convex mirror":{free:[5.2,3.4],e:[['M',9,-4]]},
+"Ray e) concave mirror":{free:[0,4.45],e:[['M',9,4]]},
+"Ray f) convex mirror":{free:[5.2,1.64],e:[['M',9,-4]]},
+"System a) two lenses":{o:[[1,3,1]],e:[['L',4,3],['L',14,3]]},
+"System b) two lenses":{o:[[2,3,1]],e:[['L',5,4],['L',11,4]]},
+"System c) lens + diverging lens":{o:[[3,3,1]],e:[['L',6,4],['L',12,-4]]},
+"System d) two diverging lenses":{o:[[2,3,1]],e:[['L',8,-7],['L',13,-6]]},
+"System e) lens + concave mirror":{o:[[15,3,1]],e:[['L',6,6],['M',17,4]]},
+"System f) lens + convex mirror":{o:[[1,3,1]],e:[['L',9,5],['M',12,-3]]},
+"Empty sandbox":{o:[],e:[]}};
+const pre=$('pre');Object.keys(P).forEach(k=>pre.add(new Option(k,k)));
+const srt=()=>S.els.slice().sort((a,b)=>a.x-b.x),elById=id=>S.els.find(e=>e.id==id);
+function load(k){if(mode!='sandbox')switchMode('sandbox');const p=P[k];Object.assign(view,HOME);LP=null;curId=null;curName=null;savedJ=null;uid=1;S={els:(p.e||[]).map(a=>({id:uid++,t:a[0],x:a[1],f:a[2]})),objs:(p.o||[]).map(a=>({x:a[0],y:a[1],ext:!!a[2]})),rays:[],lines:[]};
+ S.objs.forEach((_,i)=>principal(i));
+ if(p.free){const r=addRay(-1,{k:'hit',h:p.free[1]});r.y0=p.free[0];addRay(-1,{k:'guide',ref:r.id})}
+ $('fp').checked=!!p.free;panel();draw()}
+pre.add(new Option('(saved / custom configuration)',''),0);
+pre.onchange=()=>{if(P[pre.value])load(pre.value)};
+function addRay(src,aim){const r={id:uid++,src,aim,y0:5,vis:true};S.rays.push(r);return r}
+function principal(oi){const e=srt()[0],o=S.objs[oi];if(!e)return;
+ if(Math.abs(o.y)>1e-6){addRay(oi,{k:'par'});addRay(oi,{k:'pt',el:e.id,p:'O'});addRay(oi,{k:'pt',el:e.id,p:'F'});if(e.t=='M')addRay(oi,{k:'pt',el:e.id,p:'C'})}
+ else{addRay(oi,{k:'hit',h:2.5});addRay(oi,{k:'hit',h:-1.5})}}
+const ptOf=(e,p)=>({x:p=='F'?e.x-e.f:p=='Fp'?e.x+e.f:p=='C'?e.x-2*e.f:e.x,y:0});
+function lineOf(r){const e0=srt()[0];if(!e0)return null;
+ if(r.aim.k=='guide'){const g=S.rays.find(q=>q.id==r.aim.ref),L=g&&lineOf(g);return L?{P:{x:e0.x,y:0},s:L.s,guide:1}:null}
+ if(r.aim.k=='dir'){const g=S.rays.find(q=>q.id==r.aim.ref),L=g&&lineOf(g);return L?{P:{x:0,y:r.aim.y-L.s*r.aim.x},s:L.s,free:1}:null}
+ let Q,s;if(r.src>=0){const o=S.objs[r.src];if(!o)return null;Q={x:o.x,y:o.y}}else Q={x:0,y:r.y0};
+ const a=r.aim;if(a.k=='par')s=0;
+ else if(a.k=='pt'){const e=elById(a.el);if(!e)return null;const T=ptOf(e,a.p);if(Math.abs(T.x-Q.x)<1e-6)return null;s=(T.y-Q.y)/(T.x-Q.x)}
+ else if(a.k=='at'){if(Math.abs(a.x-Q.x)<1e-6)return null;s=(a.y-Q.y)/(a.x-Q.x)}
+ else{if(Math.abs(e0.x-Q.x)<1e-6)return null;s=(a.h-Q.y)/(e0.x-Q.x)}
+ return{P:Q,s,free:r.src<0}}
+function prop(h,q){const E=srt();if(!E.length)return null;let i=0,dir=1,pts=[];
+ for(let n=0;n<10;n++){const e=E[i];pts.push({x:e.x,y:h});q-=h/e.f;if(e.t=='M')dir=-dir;
+  let nx=null;for(const c of E){if((c.x-e.x)*dir>1e-9&&(dir>0||c.t=='L')&&(nx==null||Math.abs(c.x-e.x)<Math.abs(nx.x-e.x)))nx=c}
+  if(!nx)break;h+=q*Math.abs(nx.x-e.x);i=E.indexOf(nx)}
+ const l=pts[pts.length-1];return{pts,fin:{x:l.x,y:l.y,dx:dir,dy:q}}}
+function trace(r){const L=lineOf(r),e0=srt()[0];if(!L)return null;const h=L.P.y+L.s*(e0.x-L.P.x),T=prop(h,L.s);return T?{L,T,h}:null}
+const cr=(a,b,c,d)=>a*d-b*c;
+function inter(a,b){const k=cr(a.dx,a.dy,b.dx,b.dy);if(Math.abs(k)<1e-9)return null;const t=cr(b.x-a.x,b.y-a.y,b.dx,b.dy)/k;return{x:a.x+t*a.dx,y:a.y+t*a.dy}}
+function imageOf(oi){const R=S.rays.filter(r=>r.src==oi&&r.aim.k!='guide').map(r=>({r,tr:trace(r)})).filter(o=>o.tr);
+ for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const k=inter(R[i].tr.T.fin,R[j].tr.T.fin);if(k)return{pt:k,R}}return{pt:null,R}}
+const kindName=e=>e.t=='L'?(e.f>0?'Converging lens':'Diverging lens'):(e.f>0?'Concave mirror':'Convex mirror');
+const nm=e=>S.els.length>1?S.els.indexOf(e)+1:'',onm=i=>S.objs.length>1?i+1:'';
+function ptName(e,p){const n=nm(e);return p=='O'?(e.t=='L'?'O':'S')+n:p=='F'?'F'+n:p=='Fp'?"F′"+n:'C'+n}
+function rayCol(r){return r.aim.k=='pt'?(r.aim.p=='O'?COL.O:COL[r.aim.p]):COL[r.aim.k]}
+function rayDesc(r){const a=r.aim,s=r.src>=0?(S.objs[r.src]&&S.objs[r.src].ext?'B':'A')+onm(r.src)+': ':'free ray: ';
+ if(a.k=='par')return s+'parallel to axis';if(a.k=='at')return s+'through ('+a.x+', '+a.y+')';if(a.k=='dir')return 'parallel to ray '+(S.rays.findIndex(q=>q.id==a.ref)+1)+', through ('+a.x+', '+a.y+')';if(a.k=='hit')return s+'free aim (drag handle)';
+ if(a.k=='guide')return 'guideline through centre, ∥ to its ray';const e=elById(a.el);return s+'through '+(e?ptName(e,a.p):'?')}
+// ---- drawing
+let sc=1,dpr=1;const X=x=>(x-view.x0)*sc,Y=y=>(view.y0-y)*sc;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function clipSeg(x1,y1,x2,y2){const m=20/view.z,xa=view.x0-m,xb=view.x0+W/view.z+m,yb=view.y0+m,ya=view.y0-H/view.z-m,dx=x2-x1,dy=y2-y1;let t0=0,t1=1;
+ for(const[p,q]of[[-dx,x1-xa],[dx,xb-x1],[-dy,y1-ya],[dy,yb-y1]]){if(p==0){if(q<0)return null}else{const r=q/p;if(p<0){if(r>t1)return null;if(r>t0)t0=r}else{if(r<t0)return null;if(r<t1)t1=r}}}return[t0,t1]}
+function ln(x1,y1,x2,y2,c,w,d){const k=clipSeg(x1,y1,x2,y2);if(!k)return;const dx=x2-x1,dy=y2-y1;cx.beginPath();cx.strokeStyle=c;cx.lineWidth=w*dpr;cx.setLineDash(d?d.map(v=>v*dpr):[]);cx.lineDashOffset=k[0]*Math.hypot(dx,dy)*sc;
+ cx.moveTo(X(x1+dx*k[0]),Y(y1+dy*k[0]));cx.lineTo(X(x1+dx*k[1]),Y(y1+dy*k[1]));cx.stroke();cx.setLineDash([]);cx.lineDashOffset=0}
+function tx(s,x,y,c,sz){cx.fillStyle=c;cx.font=`${(sz||15)*dpr}px system-ui`;cx.fillText(s,X(x),Y(y))}
+function txo(s,x,y,dx,dy,c,sz){tx(s,x+dx/view.z,y+dy/view.z,c,sz)} // label at anchor + offset (offset in zoom-1 world units)
+function cross(x,y,c,lab,dx,dy){const a=.25/view.z;ln(x-a,y,x+a,y,c,2);ln(x,y-a,x,y+a,c,2);if(lab)txo(lab,x,y,dx??-.15,dy??-.6,c,17)}
+function arrow(x,y1,y2,c,lab,d){ln(x,y1,x,y2,c,2.5,d);const s=y2>=y1?1:-1,z=view.z;ln(x,y2,x-.15/z,y2-s*.3/z,c,2.5);ln(x,y2,x+.15/z,y2-s*.3/z,c,2.5);if(lab)txo(lab,x,y2,-.5,s>0?.3:-.5,c,16)}
+function aimTarget(r){const a=r.aim;if(a.k=='pt'){const e=elById(a.el);return e?ptOf(e,a.p):null}return a.k=='at'||a.k=='dir'?{x:a.x,y:a.y}:null}
+function incSeg(L,e0,h){const P=L.free?{x:-FAR,y:L.P.y+L.s*(-FAR-L.P.x)}:L.P;return P.x<e0.x?[P.x,P.y,e0.x,h]:[-FAR,h-L.s*(e0.x+FAR),e0.x,h]} // incident part of a ray
+function drawTrace(tr,col,dash,img,tgt){const{L,T,h}=tr,e0=srt()[0],p=T.pts,f=T.fin;
+ const faint=(x1,y1,x2,y2)=>{cx.globalAlpha=.3;ln(x1,y1,x2,y2,col,1.4,[5,4]);cx.globalAlpha=1};
+ const I=incSeg(L,e0,h);
+ if(L.free||L.P.x<e0.x)ln(...I,col,1.6,dash);
+ else{ln(...I,col,1.6,dash);if(!L.guide){ln(e0.x,h,L.P.x,L.P.y,col,1.4,[2,3]);faint(L.P.x,L.P.y,FAR,L.P.y+L.s*(FAR-L.P.x))}}
+ for(let i=0;i<p.length-1;i++)ln(p[i].x,p[i].y,p[i+1].x,p[i+1].y,col,1.6,dash);
+ const te=f.dx>0?FAR-f.x:f.x+FAR;ln(f.x,f.y,f.x+f.dx*te,f.y+f.dy*te,col,1.6,dash);
+ if(tgt&&!L.guide&&tgt.x>e0.x+1e-6)faint(e0.x,h,tgt.x,h+L.s*(tgt.x-e0.x)); // intended path to the aim point
+ // virtual extension: dashed back to the image (or axis crossing), faint beyond it
+ const und=p.length==1&&Math.abs(f.dy-L.s)<1e-9&&f.dx>0;
+ if(!und&&!L.guide){const tE=f.dx>0?-FAR-f.x:-(FAR-f.x),pt=t=>[f.x+f.dx*t,f.y+f.dy*t];let tm=null;
+  if(img&&(img.x-f.x)/f.dx<0)tm=(img.x-f.x)/f.dx;else if(Math.abs(f.dy)>1e-9&&-f.y/f.dy<-1e-9)tm=-f.y/f.dy;
+  if(tm!=null){tm=Math.max(tm,tE);const a=pt(tm);ln(f.x,f.y,a[0],a[1],col,1.4,[5,4]);if(tm>tE){const b=pt(tE);faint(a[0],a[1],b[0],b[1])}}}}
+function raySegs(tr){const{L,T,h}=tr,e0=srt()[0],p=T.pts,a=[];a.push(incSeg(L,e0,h));
+ for(let i=0;i<p.length-1;i++)a.push([p[i].x,p[i].y,p[i+1].x,p[i+1].y]);const f=T.fin,te=f.dx>0?FAR-f.x:f.x+FAR;a.push([f.x,f.y,f.x+f.dx*te,f.y+f.dy*te]);return a}
+function dseg(p,s){const dx=s[2]-s[0],dy=s[3]-s[1],l=dx*dx+dy*dy||1e-9;let t=((p.x-s[0])*dx+(p.y-s[1])*dy)/l;t=Math.max(0,Math.min(1,t));return Math.hypot(p.x-s[0]-t*dx,p.y-s[1]-t*dy)}
+function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1);cv.width=w*dpr;cv.height=w*dpr*H/W;sc=cv.width/W*view.z;
+ const vx0=view.x0,vx1=view.x0+W/view.z,vy1=view.y0,vy0=view.y0-H/view.z; // visible world range
+ const fg=css('--fg'),ax=css('--axis'),img=css('--img'),E=srt();
+ S.segs=[];cx.clearRect(0,0,cv.width,cv.height);
+ if(pref.grid){const gc=css('--grid'),ppu=sc/dpr,base=[1,2,5,10,20,50,100,200,500,1000].find(v=>v*ppu>=22)||1000; // base spacing grows as you zoom out, so lines never crowd
+  for(const[st,al,zm]of[[base,1,0],[.5,.6,2.5],[.25,.45,5]]){if(view.z<zm)continue;cx.globalAlpha=al;const minor=v=>st<1&&v%(st*2)===0;
+   for(let i=Math.ceil(vx0/st-1e-9);i*st<=vx1+1e-9;i++)if(!minor(i*st))ln(i*st,vy0,i*st,vy1,gc,1);
+   for(let j=Math.ceil(vy0/st-1e-9);j*st<=vy1+1e-9;j++)if(!minor(j*st))ln(vx0,j*st,vx1,j*st,gc,1)}cx.globalAlpha=1}
+ ln(vx0,0,vx1,0,ax,1.5,[8,6]);
+ if($('fp').checked)E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t=='L')ln(e.x+e.f,-6.5,e.x+e.f,6.5,ax,1,[2,4])});
+ E.forEach(e=>{const n=nm(e);
+  if(e.t=='L'){ln(e.x,-6.5,e.x,6.5,fg,3);const s=e.f>0?1:-1;for(const y of[6.5,-6.5]){const d=y>0?-1:1;ln(e.x,y,e.x-.2,y+d*.45*s,fg,3);ln(e.x,y,e.x+.2,y+d*.45*s,fg,3)}
+   cross(e.x,0,fg);txo('O'+n,e.x,0,.2,-.6,fg,17);cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);cross(e.x+e.f,0,fg,"F′"+n,-.2,-.6)}
+  else{const b=e.f>0?-1:1;cx.beginPath();cx.strokeStyle=fg;cx.lineWidth=4*dpr;cx.moveTo(X(e.x+b),Y(6.5));cx.lineTo(X(e.x),Y(4.5));cx.lineTo(X(e.x),Y(-4.5));cx.lineTo(X(e.x+b),Y(-6.5));cx.stroke();
+   for(let k=0;k<3;k++)ln(e.x,3.6+k*.4,e.x+.45,4.05+k*.4,fg,1.5);
+   cross(e.x,0,fg);txo('S'+n,e.x,0,-.7,-.6,fg,17);cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);cross(e.x-2*e.f,0,fg,'C'+n,-.2,-.6)}});
+ const imgs=S.objs.map((_,i)=>imageOf(i));
+ if($('vall').checked)S.rays.forEach(r=>{if(!r.vis)return;const tr=trace(r);if(!tr)return;if(practice&&!practice.revealed){if(practice.task=='ray'&&r.id==practice.rid){const L=tr.L,e0=srt()[0],a=incSeg(L,e0,tr.h);ln(a[0],a[1],a[2],a[3],OC,2.2);S.segs.push({id:r.id,a:[a]})}return}drawTrace(tr,rayCol(r),r.aim.k=='guide'?[6,4]:null,r.src>=0?imgs[r.src].pt:null,aimTarget(r));S.segs.push({id:r.id,a:raySegs(tr)})});
+ let info='';const hnd=[];drawExtras(hnd,E,ax);
+ S.objs.forEach((o,i)=>{const n=onm(i);
+  if(o.ext){arrow(o.x,0,o.y,OC);txo('A'+n,o.x,0,-.5,-.7,OC,17);txo('B'+n,o.x,o.y,-.5,.3,OC,17)}else cross(o.x,o.y,OC,'A'+n,-.15,-.7);
+  if(!practice)hnd.push({k:'obj',i,x:o.x,y:o.y});
+  const im=imgs[i];
+  if(im.pt&&!(practice&&!practice.revealed)){const p=im.pt,f=im.R[0].tr.T.fin,real=(p.x-f.x)*f.dx>0;
+   if($('pl').checked){ln(o.x,-6.5,o.x,6.5,ax,1,[4,4]);txo('P'+n,o.x,-6.2,.1,0,ax,15);ln(p.x,-6.5,p.x,6.5,ax,1,[4,4]);txo("P′"+n,p.x,-6.2,.1,0,ax,15)}
+   if(o.ext){arrow(p.x,0,p.y,img,'B′'+n,real?0:[5,4]);txo('A′'+n,p.x,0,-.5,p.y>0?-.7:.3,img,17)}else cross(p.x,p.y,img,'A′'+n,-.15,-.7);
+   info+=`Image of ${o.ext?'B':'A'}${n}: x = ${p.x.toFixed(2)}, y = ${p.y.toFixed(2)} (${real?'real':'virtual'})`+(o.ext&&Math.abs(o.y)>1e-6?`, magnification ${(p.y/o.y).toFixed(2)} (${p.y*o.y<0?'inverted':'upright'})`:'')+'\n'}
+  else info+=`Object ${o.ext?'AB':'A'}${n}: need at least two non-parallel rays to locate its image.\n`});
+ const e0=E[0];
+ S.rays.forEach(r=>{if(practice||!r.vis||!e0||r.aim.k=='guide'||!$('vall').checked)return;const L=lineOf(r);if(!L)return;
+  if(r.aim.k=='at'||r.aim.k=='dir')hnd.push({k:'ra',id:r.id,x:r.aim.x,y:r.aim.y});
+  if(r.aim.k=='hit')hnd.push({k:'rh',id:r.id,x:e0.x,y:L.P.y+L.s*(e0.x-L.P.x)});
+  if(r.src<0)hnd.push({k:'rs',id:r.id,x:.25,y:L.P.y+L.s*.25})});
+ if(!exporting&&S.prev&&$('vall').checked){const tr=trace(S.prev);if(tr)drawTrace(tr,'#e08a00',[5,3],null,aimTarget(S.prev))}
+ if(!exporting&&S.snapPt){cx.beginPath();cx.strokeStyle='#e08a00';cx.lineWidth=2*dpr;cx.arc(X(S.snapPt.x),Y(S.snapPt.y),11*dpr,0,7);cx.stroke();if(S.snapLbl)txo(S.snapLbl,S.snapPt.x,S.snapPt.y,.35,.5,'#e08a00',14);
+  if(symG&&S.snapLbl.startsWith('mirror image')){const a0=symG.wx>=0?0:Math.PI,th=Math.atan2(symG.wy,symG.wx),nm=v=>{while(v>Math.PI)v-=2*Math.PI;while(v<=-Math.PI)v+=2*Math.PI;return v};
+   cx.save();cx.strokeStyle='#e08a00';cx.lineWidth=1.5*dpr;cx.setLineDash([]);[th,-th].forEach(t=>{const d=nm(t-a0);cx.beginPath();cx.arc(X(symG.x),Y(symG.y),34*dpr,-a0,-(a0+d),d>0);cx.stroke()});
+   cx.restore()}}
+ S.hnd=hnd;if(!exporting)hnd.forEach(h=>{cx.beginPath();cx.fillStyle=img;cx.globalAlpha=.35;cx.arc(X(h.x),Y(h.y),9*dpr,0,7);cx.fill();cx.globalAlpha=1});
+ $('out').style.whiteSpace='pre-line';$('out').textContent=practice&&!practice.revealed?practiceMsg():par?'Parallel-ray mode: move to place the new ray (it keeps the direction of the chosen ray) and click to confirm. It snaps to O, S, F, F′, C and grid points. Esc cancels.':info||(S.rays.length?(S.rays.some(r=>r.aim.k=='guide')?'The emerging ray passes through the point where the guideline (through the centre, parallel to the incident ray) meets the focal plane.':'Rays traced.'):'Empty scene: drag a lens, mirror or object onto the canvas, then use the Trace ray tool.');commit();updTitle();updZoom()}
+// ---- panels
+function panel(){renderLines();pracUI();const els=$('els'),objs=$('objs'),rays=$('rays'),ad=$('addr');els.innerHTML=objs.innerHTML=rays.innerHTML=ad.innerHTML='';
+ const row=(p,h)=>{const d=document.createElement('div');d.className='row';d.innerHTML=h;p.appendChild(d);return d};
+ if(!S.els.length)row(els,'<span class="muted">none</span>');
+ S.els.forEach((e,i)=>{const d=row(els,`<b>#${i+1}</b><select><option value="L">Lens</option><option value="M">Mirror</option></select> x <input type="number" step="0.5" value="${e.x}"> f <input type="number" step="0.5" value="${e.f}"><span class="muted kn">${kindName(e)}</span><button>remove</button>`);
+  const[s,x,f,b]=d.querySelectorAll('select,input,button');s.value=e.t;
+  s.onchange=()=>{e.t=s.value;panel();draw()};x.oninput=()=>{e.x=+x.value;draw()};f.oninput=()=>{if(+f.value!=0)e.f=+f.value;d.querySelector('.kn').textContent=kindName(e);draw()};
+  b.onclick=()=>{S.els.splice(i,1);S.rays=S.rays.filter(r=>!(r.aim.el==e.id));panel();draw()}});
+ if(!S.objs.length)row(objs,'<span class="muted">none</span>');
+ S.objs.forEach((o,i)=>{const d=row(objs,`<b>${o.ext?'AB':'A'}${onm(i)}</b> x <input type="number" step="0.5" value="${o.x}"> y <input type="number" step="0.5" value="${o.y}"><label><input type="checkbox" ${o.ext?'checked':''}> arrow</label><button>+ principal rays</button><button>remove</button>`);
+  const[x,y,c,pb,b]=d.querySelectorAll('input,button');x.oninput=()=>{o.x=+x.value;draw()};y.oninput=()=>{o.y=+y.value;draw()};
+  c.onchange=()=>{o.ext=c.checked;if(o.ext&&Math.abs(o.y)<.1)o.y=3;panel();draw()};
+  pb.onclick=()=>{principal(i);panel();draw()};
+  b.onclick=()=>{S.objs.splice(i,1);S.rays=S.rays.filter(r=>r.src!=i);S.rays.forEach(r=>{if(r.src>i)r.src--});panel();draw()}});
+ if(!S.rays.length)row(rays,'<span class="muted">no rays yet</span>');
+ S.rays.forEach(r=>{const hasG=S.rays.some(g=>g.aim.k=='guide'&&g.aim.ref==r.id);const d=row(rays,`<label><input type="checkbox" ${r.vis?'checked':''}> <b style="color:${rayCol(r)}">●</b> ${rayDesc(r)}</label>${r.aim.k=='hit'&&r.src<0&&!hasG?'<button>+ guideline</button>':''}<button>remove</button>`);
+  const bs=d.querySelectorAll('button'),c=d.querySelector('input');c.onchange=()=>{r.vis=c.checked;draw()};
+  if(bs.length>1)bs[0].onclick=()=>{addRay(-1,{k:'guide',ref:r.id});panel();draw()};
+  bs[bs.length-1].onclick=()=>{S.rays=S.rays.filter(g=>g!==r&&g.aim.ref!=r.id);panel();draw()}});
+ const so=S.objs.map((o,i)=>`<option value="${i}">${o.ext?'AB':'A'}${onm(i)}</option>`).join('')+'<option value="-1">free ray</option>';
+ let ao='<option value="par">parallel to axis</option><option value="hit">free aim (draggable)</option>';
+ S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(p=>ao+=`<option value="${e.id}:${p}">through ${ptName(e,p)}</option>`));
+ ad.innerHTML=`<b>New ray</b> from <select>${so}</select> <select>${ao}</select><button>add ray</button>`;
+ const[a,b,btn]=ad.querySelectorAll('select,button');
+ btn.onclick=()=>{if(!S.els.length)return;const src=+a.value;let aim;if(src<0||b.value=='hit')aim={k:'hit',h:2};else if(b.value=='par')aim={k:'par'};else{const[id,p]=b.value.split(':');aim={k:'pt',el:+id,p}}
+  if(src>=0&&aim.k=='hit'){const o=S.objs[src];aim.h=o.y>0?o.y/2:2}
+  addRay(src,aim);panel();draw()}}
+function add(t,p){if(practice){toast('Adding elements is disabled in practice mode');return}p=p||{x:9,y:3};const x=clx(sn(p.x));
+ if(t[0]=='L'||t[0]=='M')S.els.push({id:uid++,t:t[0],x,f:t[1]=='-'?-pref.f:pref.f});
+ else S.objs.push({x,y:t=='A'?(Math.abs(p.y)<.3?3:sn(p.y)):sn(p.y),ext:t=='A'});panel();draw()}
+document.querySelectorAll('[data-add]').forEach(b=>{b.onclick=()=>add(b.dataset.add);b.ondragstart=e=>e.dataTransfer.setData('text/plain',b.dataset.add)});
+cv.ondragover=e=>e.preventDefault();cv.ondrop=e=>{e.preventDefault();const t=e.dataTransfer.getData('text/plain');if(t)add(t,wp(e))};
+// ---- interaction
+let drag=null;
+function wp(ev){const r=cv.getBoundingClientRect(),k=W/view.z/r.width;return{x:view.x0+(ev.clientX-r.left)*k,y:view.y0-(ev.clientY-r.top)*k}}
+const sn=v=>$('snap').checked?Math.round(v/pref.step)*pref.step:v;
+let tool='move',TR=null,par=null,dragN=0,LP=null;
+function setTool(t){if(practice&&t=='trace'){toast('Trace is disabled in practice mode: use the line tools');t='line'}if(t=='mark'&&!(practice&&practice.task=='image')){toast('The Mark tool is for the "find the image" practice task');t='move'}
+ tool=t;par=null;LP=null;S.pl=null;S.snapPt=null;S.snapLbl='';document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool==t));cv.style.cursor=t=='move'?'default':'crosshair';S.prev=null;draw()}
+function parPt(p){S.snapLbl='';let best=null,bd=tol(.6);S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best=T}}));if(best){S.snapPt=best;return best}return{x:sn(p.x),y:sn(p.y)}}
+function startPar(r){par=r.id;S.prev=null;S.snapPt=null}
+function aimFrom(p,src){S.snapLbl='';const e0=srt()[0];if(!e0)return null;const Q=src>=0?S.objs[src]:null;let best=null,bd=tol(.6);
+ S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best={k:'pt',el:e.id,p:k,T}}}));
+ if(best){S.snapPt=best.T;const{T,...a}=best;return a}
+ if(Q&&p.x>Q.x&&Math.abs(p.y-Q.y)<tol(.3))return{k:'par'};
+ if(Math.abs(p.x-e0.x)<tol(.8))return{k:'hit',h:sn(p.y)};
+ return{k:'at',x:sn(p.x),y:sn(p.y)}}
+// ---- zoom & pan: an infinite canvas; the view is a window of size W/z x H/z whose top-left corner is (view.x0, view.y0)
+const ZLEV=[.02,.05,.1,.15,.25,.33,.5,.75,1,1.25,1.5,2,3,4,6,8],ZMIN=.02,ZMAX=8,PAN=300; // the view centre may roam PAN units from the scene centre
+const clampTo=(v,a,b)=>Math.max(a,Math.min(b,v)),atHome=()=>Math.abs(view.z-1)<1e-6&&Math.abs(view.x0)<1e-6&&Math.abs(view.y0-H/2)<1e-6;
+function clampView(){const z=view.z,mx=clampTo(view.x0+W/2/z,W/2-PAN,W/2+PAN),my=clampTo(view.y0-H/2/z,-PAN,PAN);view.x0=mx-W/2/z;view.y0=my+H/2/z}
+function setView(z,fx,fy,wx,wy){z=Math.max(ZMIN,Math.min(ZMAX,z));view.z=z;view.x0=wx-fx*W/z;view.y0=wy+fy*H/z;clampView();draw()} // keep world point (wx,wy) at canvas fraction (fx,fy)
+const fracOf=(x,y)=>{const r=cv.getBoundingClientRect();return[(x-r.left)/r.width,(y-r.top)/(r.width*H/W)]}; // same uniform px-to-world scale as wp() and draw()
+function zoomAbout(z,fx,fy){setView(z,fx,fy,view.x0+fx*W/view.z,view.y0-fy*H/view.z)}
+function zoomStep(d){const z=view.z,n=d>0?ZLEV.find(l=>l>z+1e-6):[...ZLEV].reverse().find(l=>l<z-1e-6);if(n==null)return;
+ zoomAbout(n,...(lastP?[(lastP.x-view.x0)*view.z/W,(view.y0-lastP.y)*view.z/H]:[.5,.5]))}
+function zoomReset(){Object.assign(view,HOME);draw()}
+function panPx(dx,dy){const r=cv.getBoundingClientRect(),k=W/view.z/r.width;view.x0+=dx*k;view.y0-=dy*k;clampView();draw()}
+function zoomKey(k){if(k=='+'||k=='=')zoomStep(1);else if(k=='-'||k=='_')zoomStep(-1);else if(k=='0')zoomReset();else return false;return true}
+function updZoom(){const pc=Math.round(view.z*100)+'%';document.querySelectorAll('[data-act=zoomlvl] .t').forEach(e=>e.textContent=pc);
+ document.querySelectorAll('[data-act=zoomout]').forEach(b=>b.disabled=view.z<=ZMIN+1e-6);document.querySelectorAll('[data-act=zoomin]').forEach(b=>b.disabled=view.z>=ZMAX-1e-6)}
+// trackpad pinch arrives as a wheel event with ctrlKey set (Chrome, Edge, Firefox); two-finger scroll pans once the view is zoomed or moved (at the default view it scrolls the page)
+cv.addEventListener('wheel',ev=>{const m=ev.deltaMode==1?16:1;
+ if(ev.ctrlKey||ev.metaKey){ev.preventDefault();zoomAbout(view.z*Math.exp(-Math.max(-50,Math.min(50,ev.deltaY*m))*.012),...fracOf(ev.clientX,ev.clientY))}
+ else if(!atHome()){ev.preventDefault();panPx(ev.deltaX*m,ev.deltaY*m)}},{passive:false});
+// Safari reports trackpad pinch as gesture events
+let gz=1;cv.addEventListener('gesturestart',ev=>{ev.preventDefault();gz=view.z});cv.addEventListener('gesturechange',ev=>{ev.preventDefault();zoomAbout(gz*ev.scale,...fracOf(ev.clientX,ev.clientY))});cv.addEventListener('gestureend',ev=>ev.preventDefault());
+// touch pinch (two pointers), middle-button drag and Space + drag pan. Registered before the tool handlers so they can claim the event.
+const tps=new Map();let pinch=null,panD=null,spaceDown=false;
+const curs=()=>{cv.style.cursor=panD?'grabbing':spaceDown?'grab':tool=='move'?'default':'crosshair'};
+const pinchMid=()=>{const[a,b]=[...tps.values()];return{x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)||1}};
+cv.addEventListener('pointerdown',ev=>{
+ if(ev.pointerType=='touch'){tps.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+  if(tps.size==2){drag=null;S.prev=null;S.snapPt=null;const m=pinchMid(),[fx,fy]=fracOf(m.x,m.y);pinch={z0:view.z,d0:m.d,wx:view.x0+fx*W/view.z,wy:view.y0-fy*H/view.z};draw();ev.stopImmediatePropagation();return}
+  if(tps.size>2){ev.stopImmediatePropagation();return}}
+ if(ev.button==1||(ev.button==0&&spaceDown)){ev.preventDefault();panD={x:ev.clientX,y:ev.clientY};cv.setPointerCapture(ev.pointerId);curs();ev.stopImmediatePropagation()}});
+cv.addEventListener('pointermove',ev=>{if(tps.has(ev.pointerId))tps.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+ if(pinch&&tps.size>=2){const m=pinchMid(),[fx,fy]=fracOf(m.x,m.y);setView(pinch.z0*m.d/pinch.d0,fx,fy,pinch.wx,pinch.wy);ev.stopImmediatePropagation();return}
+ if(panD){panPx(panD.x-ev.clientX,panD.y-ev.clientY);panD={x:ev.clientX,y:ev.clientY};ev.stopImmediatePropagation()}});
+const endPtr=ev=>{tps.delete(ev.pointerId);if(tps.size<2)pinch=null;if(panD){panD=null;curs();ev.stopImmediatePropagation()}};
+cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
+addEventListener('keydown',e=>{if(e.code=='Space'&&!/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)&&$('mdl').style.display!='flex'){spaceDown=true;curs();e.preventDefault()}});
+addEventListener('keyup',e=>{if(e.code=='Space'){spaceDown=false;curs()}});addEventListener('blur',()=>{spaceDown=false;curs()});
+cv.onpointerdown=ev=>{if(ev.button!==0)return;const p=wp(ev);let best=null,bd=1e9;
+ if((tool=='line'||tool=='cons')&&!par){const q=snapAt(p,LP);if(!LP)LP=q;else{if(Math.hypot(q.x-LP.x,q.y-LP.y)>1e-6)S.lines.push({id:uid++,a:LP,b:q,vis:true,k:tool=='cons'?'cons':'bold'});LP=null}S.pl=q;panel();draw();return}
+ if(tool=='mark'){if(practice&&practice.task=='image'){practice.ans=snapAt(p);S.pl=null;panel();draw()}return}
+ if(par){const q=parPt(p);addRay(-1,{k:'dir',ref:par,x:q.x,y:q.y});par=null;S.prev=null;S.snapPt=null;panel();draw();return}
+ if(tool=='trace'){let src=-1;S.objs.forEach((q,i)=>{const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;src=i}});TR={src,y0:sn(p.y),p0:p};drag={k:'T'};cv.setPointerCapture(ev.pointerId);return}
+ (S.hnd||[]).forEach(h=>{const d=Math.hypot(h.x-p.x,h.y-p.y);if(d<tol(.6)&&d<bd){bd=d;best=h}});
+ if(best){drag=best}else if(!practice)S.els.forEach((e,i)=>{if(Math.abs(e.x-e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8)&&!best)best=drag={k:'F',i};else if(Math.abs(e.x-p.x)<tol(.35)&&!best)best=drag={k:'E',i}});
+ if(best){drag=best;dragN++;cv.setPointerCapture(ev.pointerId)}};
+cv.onpointermove=ev=>{if(!drag){if((tool=='line'||tool=='cons'||tool=='mark')&&!par){S.snapPt=null;S.snapLbl='';S.pl=snapAt(wp(ev),tool=='mark'?null:LP);draw();return}if(par){S.snapPt=null;const q=parPt(wp(ev));S.prev={id:-1,src:-1,aim:{k:'dir',ref:par,x:q.x,y:q.y},y0:0,vis:true};draw()}return}const p=wp(ev),e=S.els[drag.i],r=S.rays.find(q=>q.id==drag.id);
+ if(drag.k=='lp'){const l=S.lines.find(q=>q.id==drag.id);if(l){const q=snapAt(p,drag.end=='a'?l.b:l.a,l.id);l[drag.end]={x:q.x,y:q.y}}draw();return}
+ if(drag.k=='ans'){practice.ans=snapAt(p);draw();return}
+ if(drag.k=='T'){S.snapPt=null;const aim=aimFrom(p,TR.src);S.prev=aim?{id:-1,src:TR.src,aim,y0:TR.y0,vis:true}:null;draw();return}
+ if(drag.k=='ra'&&r){r.aim.x=sn(p.x);r.aim.y=sn(p.y)}
+ if(drag.k=='obj'){const o=S.objs[drag.i];o.x=sn(clx(p.x));o.y=sn(Math.max(-6.5,Math.min(6.5,p.y)))}
+ else if(drag.k=='E')e.x=sn(clx(p.x));
+ else if(drag.k=='F'){const f=e.x-sn(p.x);if(Math.abs(f)>.2)e.f=f}
+ else if(drag.k=='rh'&&r)r.aim.h=sn(Math.max(-6.5,Math.min(6.5,p.y)));
+ else if(drag.k=='rs'&&r){const E0=srt()[0],h=r.aim.h,sl=(h-p.y)/(E0.x-.25);r.y0=p.y-sl*.25}
+ draw()};
+cv.onpointerup=ev=>{if(!drag)return;if(drag.k=='T'){const p=wp(ev);if(S.prev&&Math.hypot(p.x-TR.p0.x,p.y-TR.p0.y)>tol(.3)){const r=addRay(S.prev.src,S.prev.aim);r.y0=TR.y0}S.prev=null;S.snapPt=null}drag=null;panel();draw()};
+// ---- right-click menu
+const ctx=$('ctx'),done=()=>{panel();draw()};
+const delEl=e=>{S.els.splice(S.els.indexOf(e),1);S.rays=S.rays.filter(r=>r.aim.el!=e.id)};
+const delObj=i=>{S.objs.splice(i,1);S.rays=S.rays.filter(r=>r.src!=i);S.rays.forEach(r=>{if(r.src>i)r.src--})};
+const delRay=r=>{S.rays=S.rays.filter(g=>g!==r&&g.aim.ref!=r.id)};
+function showMenu(ev,items){ctx.innerHTML='';items.forEach(it=>{if(it.sep){ctx.appendChild(document.createElement('hr'));return}
+ if(it.sws){const r=document.createElement('div');r.className='sws';it.sws.forEach(([c,n])=>{const i=document.createElement('i');i.style.background=c;i.title=n;if(it.cur==c)i.className='on';i.onclick=()=>{ctx.style.display='none';it.f(c);done()};r.appendChild(i)});ctx.appendChild(r);return}
+ const d=document.createElement('div');
+ d.textContent=(it.chk===undefined?'':(it.chk?'\u2713 ':'\u2003 '))+it.l;if(it.k){const k=document.createElement('span');k.className='k';k.textContent=it.k;d.appendChild(k)}
+ if(it.dis)d.className='d';else if(it.h)d.className='h';else d.onclick=()=>{ctx.style.display='none';it.f();done()};ctx.appendChild(d)});
+ ctx.style.display='block';ctx.style.left=Math.min(ev.clientX,innerWidth-230)+'px';ctx.style.top=Math.min(ev.clientY,innerHeight-ctx.offsetHeight-8)+'px'}
+cv.oncontextmenu=ev=>{ev.preventDefault();const p=wp(ev);let items=null;
+ if(practice){const ho=(S.hnd||[]).find(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)),l=ho&&ho.k=='lp'?S.lines.find(q=>q.id==ho.id):S.lines.find(q=>lineHit(q,p,.3));if(l)showMenu(ev,lineMenu(l.id));else if(ho&&ho.k=='ans')showMenu(ev,[{l:'Answer marker',h:1},{l:'Remove marker',f:()=>{practice.ans=null}}]);return}
+ const ho=(S.hnd||[]).filter(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)).sort((a,b)=>(a.k=='obj'?0:1)-(b.k=='obj'?0:1))[0];
+ if(ho&&ho.k=='obj'){const i=ho.i,o=S.objs[i];items=[{l:(o.ext?'Arrow':'Point')+' object',h:1},{l:'Add principal rays',f:()=>principal(i)},{l:o.ext?'Make point object':'Make arrow object',f:()=>{o.ext=!o.ext;if(o.ext&&Math.abs(o.y)<.1)o.y=3}},{l:'Remove object',f:()=>delObj(i)}]}
+ else if(ho&&ho.k=='lp'){items=lineMenu(ho.id)}else if(ho){const r=S.rays.find(q=>q.id==ho.id);items=r?rayMenu(r):null}
+ if(!items){S.els.forEach((e,i)=>{if(!items&&(Math.abs(e.x-p.x)<tol(.4)||(Math.abs(e.x-e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8))||(e.t=='L'&&Math.abs(e.x+e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8))))
+   items=[{l:kindName(e)+' #'+(i+1),h:1},{l:e.t=='L'?'Turn into mirror':'Turn into lens',f:()=>{e.t=e.t=='L'?'M':'L'}},{l:'Flip sign of f ('+(e.f>0?(e.t=='L'?'make diverging':'make convex'):(e.t=='L'?'make converging':'make concave'))+')',f:()=>{e.f=-e.f}},{l:'Remove element',f:()=>delEl(e)}]})}
+ if(!items){const l=S.lines.find(l=>lineHit(l,p,.25));if(l)items=lineMenu(l.id)}
+ if(!items){let best=null,bd=tol(.25);(S.segs||[]).forEach(g=>g.a.forEach(a=>{const d=dseg(p,a);if(d<bd){bd=d;best=g}}));if(best)items=rayMenu(S.rays.find(q=>q.id==best.id))}
+ if(!items){const pos={x:p.x,y:p.y};items=[{l:'Add here',h:1},{l:'Converging lens',f:()=>add('L+',pos)},{l:'Diverging lens',f:()=>add('L-',pos)},{l:'Concave mirror',f:()=>add('M+',pos)},{l:'Convex mirror',f:()=>add('M-',pos)},{l:'Point object',f:()=>add('P',pos)},{l:'Arrow object',f:()=>add('A',pos)}];
+  if(S.objs.length)items.push({l:'Add principal rays for all objects',f:()=>S.objs.forEach((_,i)=>principal(i))});if(S.rays.length)items.push({l:'Remove all rays',f:()=>{S.rays=[]}});items.push({l:'Clear everything',f:()=>{S={els:[],objs:[],rays:[],lines:[]}}})}
+ showMenu(ev,items)};
+function rayMenu(r){const it=[{l:rayDesc(r),h:1},{l:'Trace parallel ray',f:()=>startPar(r)},{l:'Hide ray',f:()=>{r.vis=false}}];
+ if(r.aim.k=='hit'&&r.src<0&&!S.rays.some(g=>g.aim.k=='guide'&&g.aim.ref==r.id))it.push({l:'Add guideline',f:()=>addRay(-1,{k:'guide',ref:r.id})});it.push({l:'Remove ray',f:()=>delRay(r)});return it}
+document.addEventListener('pointerdown',e=>{if(!ctx.contains(e.target))ctx.style.display='none'});
+const hist={u:[],r:[],cur:null,key:null,t:0};
+function ser(){return JSON.stringify({els:S.els,objs:S.objs,rays:S.rays,lines:S.lines,uid})}
+function updBtns(){document.querySelectorAll('[data-act=undo]').forEach(b=>b.disabled=!hist.u.length);document.querySelectorAll('[data-act=redo]').forEach(b=>b.disabled=!hist.r.length)}
+function commit(){const j=ser();if(hist.cur===null){hist.cur=j;updBtns();return}if(j===hist.cur)return;
+ const key=drag?'d'+dragN:'i',now=Date.now();
+ if(key==hist.key&&(drag||now-hist.t<400))hist.cur=j;else{hist.u.push(hist.cur);if(hist.u.length>200)hist.u.shift();hist.cur=j}
+ hist.key=key;hist.t=now;hist.r=[];updBtns()}
+function restore(j){const o=JSON.parse(j);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];uid=o.uid;S.prev=null;par=null;hist.cur=j;hist.key=null;panel();draw();updBtns()}
+function undo(){if(!hist.u.length)return;hist.r.push(hist.cur);restore(hist.u.pop())}
+function redo(){if(!hist.r.length)return;hist.u.push(hist.cur);restore(hist.r.pop())}
+addEventListener('keydown',e=>{if(e.key=='Escape'){ctx.style.display='none';if(par){par=null;S.prev=null;S.snapPt=null;draw()}}
+ const k=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&!/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){if(k=='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(k=='y'){e.preventDefault();redo()}}});
+// ---- storage (IndexedDB), export, menus
+const DB={open(){return this._p||(this._p=new Promise((res,rej)=>{const r=indexedDB.open('raylab',1);r.onupgradeneeded=()=>r.result.createObjectStore('configs',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+ async tx(mode,fn){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction('configs',mode),rq=fn(t.objectStore('configs'));t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error)})},
+ all(){return this.tx('readonly',s=>s.getAll())},put(o){return this.tx('readwrite',s=>s.put(o))},del(id){return this.tx('readwrite',s=>s.delete(id))}};
+let toastT;function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',2600)}
+const btn=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.onclick=f;return b};
+function modal(title,node,btns){$('mt').textContent=title;const b=$('mbd');b.innerHTML='';b.appendChild(node);const bt=$('mbt');bt.innerHTML='';
+ (btns||[{l:'Close'}]).forEach(x=>{const e=btn(x.l,async()=>{if(x.f){const r=await x.f();if(r===false)return}closeModal()});if(x.p)e.className='on';bt.appendChild(e)});$('mdl').style.display='flex'}
+const closeModal=()=>{$('mdl').style.display='none'};
+const txt=h=>{const d=document.createElement('div');d.innerHTML=h;return d};
+const presetName=()=>{const o=pre.options[pre.selectedIndex];return o?o.text:'optics'};
+const sceneName=()=>practice?'Practice exercise':(curName||presetName());
+const exportName=()=>sceneName().replace(/[^\w.-]+/g,'_').slice(0,60);
+function updTitle(){document.title=(practice?'Practice: '+exTitle(practice.ex):sceneName()+(curId&&ser()!==savedJ?' \u2022 unsaved':''))+' \u2013 Ray tracing playground'}
+function thumb(){const vs={...view};Object.assign(view,HOME);draw();const c=document.createElement('canvas');c.width=240;c.height=Math.round(240*H/W);const g=c.getContext('2d');g.fillStyle=css('--card');g.fillRect(0,0,c.width,c.height);g.drawImage(cv,0,0,c.width,c.height);Object.assign(view,vs);draw();return c.toDataURL('image/jpeg',.7)}
+async function doSave(name,newRec){try{const rec={name,updated:Date.now(),data:ser(),thumb:thumb()};if(!newRec&&curId)rec.id=curId;const id=await DB.put(rec);curId=id;curName=name;savedJ=rec.data;updTitle();toast('Saved "'+name+'"')}catch(e){toast('Could not save: browser storage is unavailable');return false}}
+function saveDlg(asNew){if(!sandboxOnly('Saving'))return;const inp=document.createElement('input');inp.style.width='100%';inp.value=curName||'My configuration';const d=txt('<div class="muted">Name</div>');d.appendChild(inp);
+ modal(asNew?'Save as':'Save configuration',d,[{l:'Save',p:1,f:()=>doSave(inp.value.trim()||'Untitled',asNew||!curId)},{l:'Cancel'}]);setTimeout(()=>inp.select(),0)}
+const sandboxOnly=w=>mode=='sandbox'||(toast(w+' applies to the sandbox: switch to Sandbox first'),false);
+function saveCur(){if(!sandboxOnly('Saving'))return;curId?doSave(curName,false):saveDlg(false)}
+function loadJSON(j,id,name){try{const o=JSON.parse(j);if(!Array.isArray(o.els)||!Array.isArray(o.objs)||!Array.isArray(o.rays))throw 0;if(mode!='sandbox')switchMode('sandbox');Object.assign(view,HOME);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];uid=o.uid||100}catch(e){toast('Not a valid configuration file');return}
+ curId=id||null;curName=name||null;savedJ=id?ser():null;pre.value='';hist.u=[];hist.r=[];hist.cur=null;hist.key=null;S.prev=null;par=null;panel();draw();updBtns()}
+function renameDlg(r){const inp=document.createElement('input');inp.style.width='100%';inp.value=r.name;const d=document.createElement('div');d.appendChild(inp);
+ modal('Rename',d,[{l:'Rename',p:1,f:async()=>{const n=inp.value.trim();if(!n)return false;await DB.put({...r,name:n});if(curId==r.id)curName=n;updTitle();setTimeout(openDlg,0)}},{l:'Cancel',f:()=>{setTimeout(openDlg,0)}}])}
+async function openDlg(){let list;try{list=(await DB.all()).sort((a,b)=>b.updated-a.updated)}catch(e){toast('Browser storage is unavailable');return}
+ const d=document.createElement('div');if(!list.length)d.appendChild(txt('<div class="muted">No saved configurations yet. Use File \u2192 Save.</div>'));
+ list.forEach(r=>{const row=document.createElement('div');row.className='cfgrow';const im=new Image();im.src=r.thumb;const nm=document.createElement('div');nm.className='nm';
+  const b=document.createElement('b');b.textContent=r.name;const dt=document.createElement('div');dt.className='muted';dt.textContent=new Date(r.updated).toLocaleString();nm.append(b,dt);
+  const bd=btn('Delete',async()=>{if(bd.dataset.s!='1'){bd.dataset.s='1';bd.textContent='Sure?';return}await DB.del(r.id);if(curId==r.id)curId=null;row.remove();updTitle()});
+  row.append(im,nm,btn('Open',()=>{loadJSON(r.data,r.id,r.name);closeModal()}),btn('Rename',()=>renameDlg(r)),bd);d.appendChild(row)});
+ modal('Saved configurations',d,[{l:'Close'}])}
+async function dl(filename,data){const d=typeof claude!=='undefined'&&claude.use?await claude.use('downloads'):null;if(!d){toast('File export is not available in this view');return}
+ try{await d.save({filename,data});toast('Exported '+filename)}catch(e){if(!e||e.code!='declined')toast('Could not export: '+((e&&(e.message||e.code))||'error'))}}
+async function renderImage(){const root=document.documentElement,prev=root.dataset.theme;if(pref.light)root.dataset.theme='light';
+ forceW=2000;exporting=true;const vs={...view};Object.assign(view,HOME);draw();const o=document.createElement('canvas');o.width=cv.width;o.height=cv.height;const c=o.getContext('2d');c.fillStyle=css('--card');c.fillRect(0,0,o.width,o.height);c.drawImage(cv,0,0);
+ forceW=0;exporting=false;Object.assign(view,vs);if(prev)root.dataset.theme=prev;else delete root.dataset.theme;draw();return o}
+async function exportImg(t){const o=await renderImage();o.toBlob(b=>dl(exportName()+'.'+t,b),t=='png'?'image/png':'image/jpeg',.92)}
+const esc=t=>String(t).replace(/\u2032/g,"'").replace(/\u2225/g,'||').replace(/[^\x20-\x7e]/g,'?').replace(/[()\\]/g,m=>'\\'+m);
+const wrap=(t,n)=>{const o=[];t=String(t);while(t.length>n){let i=t.lastIndexOf(' ',n);if(i<8)i=n;o.push(t.slice(0,i));t=' '+t.slice(i).trim()}o.push(t);return o};
+function makePDF(jb,iw,ih,title,lines){const enc=new TextEncoder(),parts=[],off=[];let n=0;const P=u=>{parts.push(u);n+=u.length},T=t=>P(enc.encode(t));
+ const w=560,h=Math.round(w*ih/iw),y=545-h;let c=`q ${w} 0 0 ${h} 30 ${y} cm /Im0 Do Q\nBT /F1 14 Tf 30 562 Td (${esc(title)}) Tj ET\nBT /F1 9 Tf 12 TL 610 545 Td\n`;lines.forEach(l=>c+=`(${esc(l)}) Tj T*\n`);c+='ET';
+ T('%PDF-1.4\n');const O=(i,b)=>{off[i]=n;T(`${i} 0 obj\n${b}\nendobj\n`)};
+ O(1,'<< /Type /Catalog /Pages 2 0 R >>');O(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ O(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im0 5 0 R >> /Font << /F1 6 0 R >> >> /Contents 4 0 R >>');
+ O(4,`<< /Length ${enc.encode(c).length} >>\nstream\n${c}\nendstream`);
+ off[5]=n;T(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jb.length} >>\nstream\n`);P(jb);T('\nendstream\nendobj\n');
+ O(6,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+ const x=n;T('xref\n0 7\n0000000000 65535 f \n');for(let i=1;i<=6;i++)T(String(off[i]).padStart(10,'0')+' 00000 n \n');T(`trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`);
+ return new Blob(parts,{type:'application/pdf'})}
+async function exportPDF(){const o=await renderImage(),bin=atob(o.toDataURL('image/jpeg',.92).split(',')[1]),jb=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)jb[i]=bin.charCodeAt(i);
+ const L=['ELEMENTS'];S.els.forEach((e,i)=>L.push(...wrap(`${i+1}. ${kindName(e)}: x=${e.x}, f=${e.f}`,44)));
+ L.push('','OBJECTS');S.objs.forEach((q,i)=>L.push(...wrap(`${i+1}. ${q.ext?'Arrow':'Point'}: x=${q.x}, y=${q.y}`,44)));
+ L.push('','RAYS');S.rays.forEach((r,i)=>L.push(...wrap(`${i+1}. ${rayDesc(r)}${r.vis?'':' (hidden)'}`,44)));
+ L.push('','RESULTS');$('out').textContent.split('\n').filter(Boolean).forEach(t=>L.push(...wrap(t,44)));
+ dl(exportName()+'.pdf',makePDF(jb,o.width,o.height,sceneName(),L.slice(0,44)))}
+function exportJSON(){if(!sandboxOnly('Exporting a configuration'))return;dl(exportName()+'.json',JSON.stringify(JSON.parse(ser()),null,1))}
+$('imp').onchange=async e=>{const f=e.target.files[0];if(!f)return;loadJSON(await f.text(),null,f.name.replace(/\.json$/,''));e.target.value=''};
+function applyTheme(){if(pref.theme=='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=pref.theme}
+function setPref(o){Object.assign(pref,o);try{localStorage.setItem('raylab.prefs',JSON.stringify(pref))}catch(e){}applyTheme();draw()}
+const tgl=id=>{$(id).checked=!$(id).checked};
+function fDlg(){const inp=document.createElement('input');inp.type='number';inp.step='0.5';inp.value=pref.f;const d=txt('<div class="muted">Focal length given to new lenses and mirrors (grid units)</div>');d.appendChild(inp);
+ modal('Default focal length',d,[{l:'OK',p:1,f:()=>{const v=Math.abs(+inp.value);if(!v)return false;setPref({f:v})}},{l:'Cancel'}])}
+function shortcutsDlg(){const rows=[['Tools',[['M','Move'],['T','Trace ray'],['Shift+T','Parallel ray (hover a ray first)'],['L / B','Bold line (solid segment)'],['C','Construction line (dotted, infinite)'],['X','Mark answer (practice)'],['E / Enter','Evaluate (practice)']]],
+ ['Add at the cursor',[['1','Converging lens'],['2','Diverging lens'],['3','Concave mirror'],['4','Convex mirror'],['P','Point object'],['A','Arrow object']]],
+ ['View',[['+ / \u2212','Zoom in / out'],['0','Reset zoom to 100%'],['Ctrl + scroll, or pinch','Zoom at the pointer'],['Scroll, or Space + drag','Pan once the view is zoomed or moved']]],
+ ['Rays and editing',[['R','Principal rays for all objects'],['H','Hide the ray under the cursor'],['Delete','Remove the element, object or ray under the cursor'],['Esc','Cancel / back to Move']]],
+ ['View',[['V','Show / hide all rays'],['F','Focal planes'],['I','Object / image planes'],['G','Grid'],['S','Snap to grid']]],
+ ['File and history',[['Ctrl+Z / Ctrl+Y','Undo / redo'],['Ctrl+S','Save'],['Ctrl+O','Open saved'],['Ctrl+E','Export PNG'],['Ctrl+Shift+E','Export PDF'],['?','This list']]]];
+ const d=document.createElement('div');rows.forEach(([t,L])=>{const h=document.createElement('div');h.innerHTML='<b></b>';h.firstChild.textContent=t;h.style.marginTop='8px';d.appendChild(h);
+  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='row';r.style.margin='2px 0';const kb=document.createElement('code');kb.textContent=k;kb.style.cssText='min-width:110px;display:inline-block;background:var(--grid);padding:1px 6px;border-radius:4px';const sp=document.createElement('span');sp.textContent=v;r.append(kb,sp);d.appendChild(r)})});
+ const n=document.createElement('div');n.className='muted';n.style.marginTop='8px';n.textContent='Digits use the physical number row, so they work on AZERTY keyboards without Shift. Mouse: drag things with Move; right-click for context menus.';d.appendChild(n);modal('Keyboard shortcuts',d)}
+const MENUS={
+ file:()=>[{l:'New (empty sandbox)',f:()=>{pre.value='Empty sandbox';load('Empty sandbox')}},{l:'Open saved\u2026',k:'Ctrl+O',f:openDlg},{sep:1},{l:'Save',k:'Ctrl+S',f:saveCur,dis:mode!='sandbox'},{l:'Save as\u2026',f:()=>saveDlg(true),dis:mode!='sandbox'},{sep:1},
+  {l:'Export image (PNG)',k:'Ctrl+E',f:()=>exportImg('png')},{l:'Export image (JPEG)',f:()=>exportImg('jpg')},{l:'Export PDF',k:'Ctrl+Shift+E',f:exportPDF},{sep:1},{l:'Export configuration (.json)',f:exportJSON,dis:mode!='sandbox'},{l:'Import configuration (.json)\u2026',f:()=>$('imp').click()}],
+ edit:()=>[{l:'Undo',k:'Ctrl+Z',f:undo,dis:!hist.u.length},{l:'Redo',k:'Ctrl+Y',f:redo,dis:!hist.r.length},{sep:1},{l:'Add principal rays for all objects',k:'R',f:()=>S.objs.forEach((_,i)=>principal(i)),dis:!!practice},{l:'Remove all rays',f:()=>{S.rays=[]},dis:!!practice},{l:'Remove all construction lines',f:()=>{S.lines=[]}},{l:'Clear everything',f:()=>{S.els=[];S.objs=[];S.rays=[];S.lines=[]},dis:!!practice}],
+ view:()=>[{l:'Rays',k:'V',chk:$('vall').checked,f:()=>tgl('vall')},{l:'Focal planes',k:'F',chk:$('fp').checked,f:()=>tgl('fp')},{l:'Object / image planes',k:'I',chk:$('pl').checked,f:()=>tgl('pl')},{l:'Grid',k:'G',chk:pref.grid,f:()=>setPref({grid:!pref.grid})},{l:'Snap to grid',k:'S',chk:$('snap').checked,f:()=>tgl('snap')},{l:'Snap to symmetry (mirrors)',chk:$('snapSym').checked,f:()=>tgl('snapSym')},{sep:1},{l:'Zoom in',k:'+',f:()=>zoomStep(1)},{l:'Zoom out',k:'\u2212',f:()=>zoomStep(-1)},{l:'Reset zoom (100%)',k:'0',f:zoomReset}],
+ prefs:()=>[{l:'Snap step 0.25',chk:pref.step==.25,f:()=>setPref({step:.25})},{l:'Snap step 0.5',chk:pref.step==.5,f:()=>setPref({step:.5})},{l:'Snap step 1',chk:pref.step==1,f:()=>setPref({step:1})},{sep:1},
+  {l:'Theme: system',chk:pref.theme=='auto',f:()=>setPref({theme:'auto'})},{l:'Theme: light',chk:pref.theme=='light',f:()=>setPref({theme:'light'})},{l:'Theme: dark',chk:pref.theme=='dark',f:()=>setPref({theme:'dark'})},{sep:1},
+  {l:'Export with light background',chk:pref.light,f:()=>setPref({light:!pref.light})},{l:'Default focal length ('+pref.f+')\u2026',f:fDlg}],
+ help:()=>[{l:'Keyboard shortcuts and mouse\u2026',k:'?',f:shortcutsDlg}]};
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();const r=b.getBoundingClientRect();showMenu({clientX:r.left,clientY:r.bottom+2},MENUS[b.dataset.m]())});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(e.key=='Escape')closeModal();if((e.ctrlKey||e.metaKey)&&k=='s'){e.preventDefault();saveCur()}if((e.ctrlKey||e.metaKey)&&k=='o'){e.preventDefault();openDlg()}if((e.ctrlKey||e.metaKey)&&k=='e'){e.preventDefault();e.shiftKey?exportPDF():exportImg('png')}});
+let lastP=null;cv.addEventListener('pointermove',e=>{lastP=wp(e)});cv.addEventListener('pointerleave',()=>{lastP=null});
+function hitAt(p){if(!p)return null;
+ const ho=(S.hnd||[]).filter(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)).sort((a,b)=>(a.k=='obj'?0:1)-(b.k=='obj'?0:1))[0];
+ if(ho&&ho.k=='obj')return{k:'obj',i:ho.i};if(ho){const r=S.rays.find(q=>q.id==ho.id);if(r)return{k:'ray',r}}
+ for(const e of S.els)if(Math.abs(e.x-p.x)<tol(.4)||(Math.abs(e.x-e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8))||(e.t=='L'&&Math.abs(e.x+e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8)))return{k:'el',e};
+ let best=null,bd=tol(.25);(S.segs||[]).forEach(g=>g.a.forEach(a=>{const d=dseg(p,a);if(d<bd){bd=d;best=g}}));
+ if(best){const r=S.rays.find(q=>q.id==best.id);if(r)return{k:'ray',r}}const hl=S.lines.find(l=>lineHit(l,p,.25));return hl?{k:'line',l:hl}:null}
+addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||$('mdl').style.display=='flex')return;
+ const k=e.key.toLowerCase(),sh=e.shiftKey,dg={Digit1:'L+',Digit2:'L-',Digit3:'M+',Digit4:'M-',Numpad1:'L+',Numpad2:'L-',Numpad3:'M+',Numpad4:'M-'}[e.code];let ok=true;
+ if(zoomKey(k))return;
+ if(practice&&!(['l','b','c','x','m','e','enter','escape','delete','backspace','g','s'].includes(k)||e.key=='?'))return;
+ if(dg)add(dg,lastP||undefined);
+ else if(k=='m')setTool('move');
+ else if(k=='l'||k=='b')setTool('line');
+ else if(k=='c')setTool('cons');
+ else if(k=='x')setTool('mark');
+ else if((k=='e'||k=='enter')&&practice)evaluate();
+ else if(k=='t'){if(sh){const h=hitAt(lastP);if(h&&h.k=='ray'){startPar(h.r);draw()}else toast('Hover over a ray, then press Shift+T')}else setTool('trace')}
+ else if(k=='p')add('P',lastP||undefined);
+ else if(k=='a')add('A',lastP||undefined);
+ else if(k=='r'){S.objs.forEach((_,i)=>principal(i));panel();draw()}
+ else if(k=='h'){const h=hitAt(lastP);if(h&&h.k=='ray'){h.r.vis=false;panel();draw()}else toast('Hover over a ray, then press H')}
+ else if(k=='delete'||k=='backspace'){const h=hitAt(lastP);if(h&&practice&&h.k!='line')toast('Only your own lines can be deleted in practice mode');else if(h){if(h.k=='obj')delObj(h.i);else if(h.k=='el')delEl(h.e);else if(h.k=='line')delLine(h.l);else delRay(h.r);panel();draw()}else toast('Hover over an element, object, ray or line, then press Delete')}
+ else if(k=='v'){tgl('vall');draw()}else if(k=='f'){tgl('fp');draw()}else if(k=='i'){tgl('pl');draw()}else if(k=='g')setPref({grid:!pref.grid})
+ else if(k=='s')tgl('snap')
+ else if(k=='escape'){if(LP){LP=null;S.pl=null;draw()}else if(tool!='move')setTool('move')}
+ else if(e.key=='?')shortcutsDlg();
+ else ok=false;
+ if(ok)e.preventDefault()});
+applyTheme();
+// ---- construction lines, snapping, practice mode
+const delLine=l=>{S.lines=S.lines.filter(q=>q!==l)};
+function lineMenu(id){const l=S.lines.find(q=>q.id==id);if(!l)return null;const n=S.lines.indexOf(l)+1;return[{l:(l.k=='bold'?'Bold line ':'Construction line ')+n,h:1},{l:l.k=='bold'?'Make construction (dotted)':'Make bold',f:()=>{l.k=l.k=='bold'?'cons':'bold'}},{l:'Colour',h:1},{sws:LINE_COLORS,cur:l.c||LC,f:c=>{if(c==LC)delete l.c;else l.c=c}},{sep:1},{l:l.vis?'Hide line':'Show line',f:()=>{l.vis=!l.vis}},{l:'Remove line',f:()=>delLine(l)}]}
+function renderLines(){const d=$('lns');d.innerHTML='';if(!S.lines.length){d.appendChild(txt('<span class="muted">none: use the Bold line (L) or Construction line (C) tool</span>'));return}
+ const f=v=>+v.toFixed(2);S.lines.forEach((l,i)=>{const r=document.createElement('div');r.className='row';const lab=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.checked=l.vis;c.onchange=()=>{l.vis=c.checked;draw()};
+  lab.append(c,document.createTextNode(` ${l.k=='bold'?'Bold':'Dotted'} ${i+1}: (${f(l.a.x)}, ${f(l.a.y)}) to (${f(l.b.x)}, ${f(l.b.y)})`));r.append(lab,btn('remove',()=>{delLine(l);panel();draw()}));d.appendChild(r)})}
+function sInter(a,b){const r=[a[2]-a[0],a[3]-a[1]],q=[b[2]-b[0],b[3]-b[1]],d=r[0]*q[1]-r[1]*q[0];if(Math.abs(d)<1e-9)return null;const t=((b[0]-a[0])*q[1]-(b[1]-a[1])*q[0])/d,u=((b[0]-a[0])*r[1]-(b[1]-a[1])*r[0])/d;return t>=0&&t<=1&&u>=0&&u<=1?{x:a[0]+t*r[0],y:a[1]+t*r[1]}:null}
+const rnd4=v=>Math.round(v*1e4)/1e4;
+const rayVis=r=>r.vis&&$('vall').checked&&(!practice||practice.revealed||(practice.task=='ray'&&r.id==practice.rid)); // rays the student can see (in practice: only the given ray until the solution is shown)
+function specialPts(skip){const a=[];S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>a.push({...ptOf(e,k),lbl:ptName(e,k)})));
+ S.objs.forEach((o,i)=>{a.push({x:o.x,y:o.y,lbl:(o.ext?'B':'A')+onm(i)});if(o.ext)a.push({x:o.x,y:0,lbl:'A'+onm(i)})});
+ S.rays.forEach(r=>{if(!rayVis(r))return;const tr=trace(r);if(!tr)return;tr.T.pts.forEach((q,i)=>{if(practice&&!practice.revealed&&i>0)return;const e=S.els.find(c=>Math.abs(c.x-q.x)<1e-6);a.push({x:q.x,y:q.y,lbl:'ray hits '+(e&&e.t=='M'?'mirror':'lens')})})});
+ S.lines.forEach(l=>{if(l.id!=skip&&l.vis)a.push({...l.a,lbl:'line end'},{...l.b,lbl:'line end'})});return a}
+let symG=null,shiftDown=false;
+addEventListener('keydown',e=>{if(e.key=='Shift')shiftDown=true});addEventListener('keyup',e=>{if(e.key=='Shift')shiftDown=false});addEventListener('blur',()=>{shiftDown=false});
+// symmetry snap (mirrors only): starting at a mirror vertex, snap to the reflection about the axis of any visible line through that vertex
+function symSnap(p,from,skip){symG=null;if(!$('snapSym').checked||shiftDown||Math.abs(from.y)>1e-6||!S.els.some(e=>e.t=='M'&&Math.abs(e.x-from.x)<1e-6))return null;
+ let best=null,bd=tol(.25);
+ S.lines.forEach((l,i)=>{if(l.id==skip||!l.vis)return;const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,n=Math.hypot(dx,dy);if(n<1e-6||Math.abs(dy)<1e-6)return;
+  if(Math.abs((from.x-l.a.x)*dy-(from.y-l.a.y)*dx)/n>tol(.1))return;if(l.k=='bold'&&dseg(from,[l.a.x,l.a.y,l.b.x,l.b.y])>tol(.15))return;
+  const ux=dx/n,uy=-dy/n,vx=p.x-from.x,vy=p.y-from.y,t=vx*ux+vy*uy,d=Math.abs(vx*uy-vy*ux);
+  if(d<bd){bd=d;const far=Math.hypot(l.a.x-from.x,l.a.y-from.y)>Math.hypot(l.b.x-from.x,l.b.y-from.y)?l.a:l.b;
+   best={x:from.x+t*ux,y:from.y+t*uy,lbl:'mirror image of line '+(i+1),g:{x:from.x,y:from.y,wx:far.x-from.x,wy:far.y-from.y}}}});
+ if(best)symG=best.g;return best}
+// element-plane snap: an endpoint dragged close to a lens/mirror lands exactly on it, sliding along the line being drawn so its direction is kept.
+// Point snaps (F, O, intersections...) keep priority; direction snaps and plain grid snap are completed by it.
+function snapAt(p,from,skip){const r=snapBase(p,from,skip),lbl=S.snapLbl;if(lbl&&!/^(parallel|through|mirror image)/.test(lbl))return r;
+ let best=null,bd=tol(.3);const PH=H/2+.5;
+ S.els.forEach(e=>{const d=Math.abs(r.x-e.x);if(d>=bd)return;if(from&&Math.abs(from.x-e.x)<1e-6)return;
+  let y=r.y;if(from){const dx=r.x-from.x;if(Math.abs(dx)<1e-6)return;y=from.y+(r.y-from.y)*(e.x-from.x)/dx}
+  if(Math.abs(y)>PH)return;bd=d;best={x:e.x,y:rnd4(y),e}});
+ if(!best)return r;
+ S.snapPt={x:best.x,y:best.y};S.snapLbl=(lbl?lbl+', ':'')+'on '+(best.e.t=='M'?'mirror':'lens')+(S.els.length>1?' '+(S.els.indexOf(best.e)+1):'');
+ return{x:best.x,y:best.y}}
+function snapBase(p,from,skip){S.snapPt=null;S.snapLbl='';symG=null;const pts=specialPts(skip),L=S.lines.filter(l=>l.id!=skip&&l.vis).map(l=>{const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,n=Math.hypot(dx,dy)||1;if(l.k=='bold')return[l.a.x,l.a.y,l.b.x,l.b.y];return[l.a.x-dx/n*FAR,l.a.y-dy/n*FAR,l.b.x+dx/n*FAR,l.b.y+dy/n*FAR]});
+ const sg=L.slice();(S.segs||[]).forEach(g=>g.a.forEach(a=>sg.push(a)));const PH=H/2+.5,pl=S.els.map(e=>[e.x,-PH,e.x,PH]);pl.push([-FAR,0,FAR,0]);S.els.forEach(e=>{pl.push([e.x-e.f,-PH,e.x-e.f,PH,'focal plane F'+(S.els.length>1?S.els.indexOf(e)+1:'')]);if(e.t=='L')pl.push([e.x+e.f,-PH,e.x+e.f,PH,'focal plane F\u2032'+(S.els.length>1?S.els.indexOf(e)+1:'')])});const cand=pts.slice();
+ for(let i=0;i<L.length;i++){for(let j=i+1;j<sg.length;j++){const k=sInter(L[i],sg[j]);if(k)cand.push({...k,lbl:'intersection'})}pl.forEach(q=>{const k=sInter(L[i],q);if(k)cand.push({...k,lbl:q[4]||'intersection'})})}
+ let best=null,bd=tol(.5);cand.forEach(c=>{const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;best=c}});
+ if(best){S.snapPt={x:best.x,y:best.y};S.snapLbl=best.lbl;return{x:rnd4(best.x),y:rnd4(best.y)}}
+ if(from){const sy=symSnap(p,from,skip);if(sy){S.snapPt={x:sy.x,y:sy.y};S.snapLbl=sy.lbl;return{x:rnd4(sy.x),y:rnd4(sy.y)}}
+  const dirs=[{dx:1,dy:0,lbl:'parallel to axis'}];pts.forEach(q=>{if(Math.hypot(q.x-from.x,q.y-from.y)>1e-6&&q.lbl!='line end')dirs.push({dx:q.x-from.x,dy:q.y-from.y,lbl:'through '+q.lbl})});
+  S.lines.forEach((l,i)=>{if(l.id!=skip&&l.vis)dirs.push({dx:l.b.x-l.a.x,dy:l.b.y-l.a.y,lbl:'parallel to line '+(i+1)})});
+  S.rays.forEach((r,i)=>{if(!rayVis(r))return;const L=lineOf(r);if(L)dirs.push({dx:1,dy:L.s,lbl:practice&&!practice.revealed?'parallel to incident ray':'parallel to ray '+(i+1)})});
+  let bb=null,b2=tol(.25);dirs.forEach(d=>{const n=Math.hypot(d.dx,d.dy);if(n<1e-9)return;const ux=d.dx/n,uy=d.dy/n,vx=p.x-from.x,vy=p.y-from.y,t=vx*ux+vy*uy,dist=Math.abs(vx*uy-vy*ux);if(dist<b2){b2=dist;bb={x:from.x+t*ux,y:from.y+t*uy,lbl:d.lbl}}});
+  if(bb){S.snapPt={x:bb.x,y:bb.y};S.snapLbl=bb.lbl;return{x:rnd4(bb.x),y:rnd4(bb.y)}}}
+ return{x:sn(p.x),y:sn(p.y)}}
+function drawExtras(hnd,E,ax){
+ S.lines.forEach((l,i)=>{if(!l.vis)return;const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,n=Math.hypot(dx,dy)||1,ux=dx/n,uy=dy/n;
+  const lc=l.c||LC;
+  if(l.k=='bold')ln(l.a.x,l.a.y,l.b.x,l.b.y,lc,3.2);else{cx.globalAlpha=.9;ln(l.a.x-ux*FAR,l.a.y-uy*FAR,l.b.x+ux*FAR,l.b.y+uy*FAR,lc,2.1,[1.6,5]);cx.globalAlpha=1}
+  [l.a,l.b].forEach(q=>{cx.beginPath();cx.fillStyle=lc;cx.arc(X(q.x),Y(q.y),3.5*dpr,0,7);cx.fill()});txo(String(i+1),(l.a.x+l.b.x)/2,(l.a.y+l.b.y)/2,.1,.4,lc,13);
+  hnd.push({k:'lp',id:l.id,end:'a',x:l.a.x,y:l.a.y},{k:'lp',id:l.id,end:'b',x:l.b.x,y:l.b.y})});
+ if(!exporting&&(tool=='line'||tool=='cons')&&LP){if(S.pl){const dx=S.pl.x-LP.x,dy=S.pl.y-LP.y,n=Math.hypot(dx,dy);if(n>1e-6){const ux=dx/n,uy=dy/n;if(tool=='cons'){cx.globalAlpha=.7;ln(LP.x-ux*FAR,LP.y-uy*FAR,S.pl.x+ux*FAR,S.pl.y+uy*FAR,LC,2.1,[1.6,5]);cx.globalAlpha=1}else{cx.globalAlpha=.7;ln(LP.x,LP.y,S.pl.x,S.pl.y,LC,3.2);cx.globalAlpha=1}}}
+  cx.beginPath();cx.fillStyle=LC;cx.arc(X(LP.x),Y(LP.y),4.5*dpr,0,7);cx.fill()}
+ if(practice&&!practice.revealed&&practice.hint>=2){
+  if(practice.task=='image')principalList(0).slice(0,practice.hint>=3?9:1).forEach(r=>{const tr=trace(r);if(tr){cx.globalAlpha=.4;drawTrace(tr,'#e08a00',[5,3],null,aimTarget(r));cx.globalAlpha=1}});
+  else{const r=S.rays.find(q=>q.id==practice.rid);if(r&&srt()[0]){cx.globalAlpha=.45;E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t=='L')ln(e.x+e.f,-6.5,e.x+e.f,6.5,ax,1,[2,4])});
+   const tg=trace({id:-200,src:-1,aim:{k:'guide',ref:r.id},y0:0});if(tg)drawTrace(tg,COL.guide,[6,4],null);
+   if(practice.hint>=3){const tr=trace(r);if(tr){const f=tr.T,p0=f.pts[0],d=f.pts.length>1?{x:f.pts[1].x-p0.x,y:f.pts[1].y-p0.y}:{x:f.fin.dx,y:f.fin.dy},n=Math.hypot(d.x,d.y);ln(p0.x-d.x/n*30,p0.y-d.y/n*30,p0.x+d.x/n*30,p0.y+d.y/n*30,'#e08a00',1.6,[5,3])}}cx.globalAlpha=1}}}
+ if(practice&&practice.ans){const a=practice.ans,u=9*dpr;cx.beginPath();cx.strokeStyle='#e08a00';cx.fillStyle='rgba(224,138,0,.25)';cx.lineWidth=2*dpr;cx.moveTo(X(a.x),Y(a.y)-u);cx.lineTo(X(a.x)+u,Y(a.y));cx.lineTo(X(a.x),Y(a.y)+u);cx.lineTo(X(a.x)-u,Y(a.y));cx.closePath();cx.fill();cx.stroke();txo('answer',a.x,a.y,.3,.55,'#e08a00',14);hnd.push({k:'ans',x:a.x,y:a.y})}}
+// practice
+function principalList(oi){const e=srt()[0],o=S.objs[oi],R=[];if(!e||!o)return R;
+ if(Math.abs(o.y)>1e-6){R.push({src:oi,aim:{k:'par'}},{src:oi,aim:{k:'pt',el:e.id,p:'O'}},{src:oi,aim:{k:'pt',el:e.id,p:'F'}});if(e.t=='M')R.push({src:oi,aim:{k:'pt',el:e.id,p:'C'}})}
+ else R.push({src:oi,aim:{k:'hit',h:2.5}},{src:oi,aim:{k:'hit',h:-1.5}});return R.map((r,i)=>({id:-100-i,y0:0,vis:true,...r}))}
+function trueImage(oi){const R=principalList(oi).map(r=>({r,tr:trace(r)})).filter(o=>o.tr);for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const k=inter(R[i].tr.T.fin,R[j].tr.T.fin);if(k)return{pt:k,R}}return{pt:null,R}}
+function buildExercise(d){S.els=(d.els||[d.el]).map((e,i)=>({id:i+1,t:e[0],x:e[1],f:e[2]}));uid=S.els.length+1;S.objs=[];S.rays=[];S.lines=[];if(d.view)Object.assign(view,d.view);
+ if(d.obj)S.objs.push({x:d.obj[0],y:d.obj[1],ext:!!d.ext});else{const r=addRay(-1,{k:'hit',h:d.ray[0]});r.y0=d.ray[1]}
+ pre.value='';panel();draw()}
+function startPractice(task,ex){if(!S.els.length){toast('Add at least one lens or mirror first');return}let rid=null;
+ if(task=='image'){if(!S.objs.length){toast('Add an object first');return}}else{const r=S.rays.find(q=>q.src<0&&q.aim.k=='hit');if(!r){toast('Add a free incident ray first (New ray from "free ray"), or use Random exercise');return}rid=r.id}
+ S.lines=[];practice={task,ex,rid,revealed:false,hint:0,ans:null,fb:[],hintTxt:''};$('vall').checked=true;setTool('line');panel();draw()}
+function practiceMsg(){return exTitle(practice.ex)+'\n'+(practice.task=='image'?'Practice: find the image of '+(S.objs[0]&&S.objs[0].ext?'B':'A')+'. Use the Bold line (L) and Construction line (C) tools: click a start point, then an end point. Points snap to F, O, S, C, intersections and directions (parallel to the axis, through a point). Mark the image with X, then Evaluate (E).':'Practice: construct the emerging ray for the incident ray shown. Use the Bold line (L) and Construction line (C) tools: for example a dotted guideline parallel to the incident ray (through the centre O of a lens, or through C or the vertex S of a mirror), then use the focal plane.'+(S.els.length>1?' With several elements, draw the ray leaving each element in turn.':'')+' Points and directions snap to O, F, the focal planes, the point where the ray hits the element, and the direction of the incident ray. Evaluate with E.')}
+const lineHit=(l,p,t)=>(l.k=='bold'?dseg(p,[l.a.x,l.a.y,l.b.x,l.b.y]):dLine(p,l))<tol(t);
+const dLine=(q,l)=>{const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,n=Math.hypot(dx,dy)||1;return Math.abs((q.x-l.a.x)*dy-(q.y-l.a.y)*dx)/n};
+const yAt=(l,x)=>Math.abs(l.b.x-l.a.x)<1e-9?null:l.a.y+(l.b.y-l.a.y)*(x-l.a.x)/(l.b.x-l.a.x);
+function evalImage(){const o=S.objs[0],e0=srt()[0],im=trueImage(0);if(!im.pt)return{ok:false,fb:[['warn','This scene has no single image (the output rays are parallel).']]};
+ const T=im.pt,fb=[];let posOK=false;
+ if(!practice.ans)fb.push(['warn','Place your image marker with the Mark tool (X), ideally on an intersection of your lines.']);
+ else{const d=Math.hypot(practice.ans.x-T.x,practice.ans.y-T.y);posOK=d<=.35;fb.push([posOK?'ok':'bad',posOK?`Marked image position is correct (off by ${d.toFixed(2)}).`:`Marked image position is off by ${d.toFixed(2)} units.`])}
+ const F={x:e0.x-e0.f,y:0},Oc={x:e0.x,y:0},C={x:e0.x-2*e0.f,y:0},multi=S.els.length>1;
+ const Ls=S.lines.map((l,i)=>({l,i:i+1,P:dLine(o,l)<.2,T:dLine(T,l)<.2})).filter(q=>q.l.vis);
+ if(!Ls.length)fb.push(['warn','No lines yet. Draw at least two rays from the object.']);
+ Ls.forEach(q=>{const sl=Math.abs(q.l.b.x-q.l.a.x)<1e-9?1e9:(q.l.b.y-q.l.a.y)/(q.l.b.x-q.l.a.x);let kind='ray through the object';
+  if(q.P){if(Math.abs(sl)<.03)kind='ray parallel to the axis';else if(dLine(F,q.l)<.2)kind='ray through F';else if(dLine(Oc,q.l)<.2)kind='ray through the '+(e0.t=='L'?'centre O':'vertex S');else if(e0.t=='M'&&dLine(C,q.l)<.2)kind='ray through C'}
+  if(q.P&&q.T)fb.push(['ok',`Line ${q.i}: valid, a ${kind} that continues through the image.`]);
+  else if(q.P)fb.push(['ok',`Line ${q.i}: valid incident ${kind}.`]);
+  else if(q.T)fb.push(['ok',`Line ${q.i}: valid emerging ray through the image.`]);
+  else fb.push(['warn',`Line ${q.i}: not recognised as a ray from the object or towards the image (it may be an intermediate construction).`])});
+ let sup=0;
+ if(multi)sup=Ls.filter(q=>q.T).length;
+ else Ls.filter(q=>q.P).forEach(a=>{const h=yAt(a.l,e0.x);if(a.T||(h!=null&&Ls.some(b=>b.T&&Math.abs((yAt(b.l,e0.x)??1e9)-h)<.3)))sup++;else fb.push(['warn',`Line ${a.i}: this incident ray has no matching refracted ray yet.`])});
+ fb.push([sup>=2?'ok':'warn',`${sup} complete ray${sup==1?'':'s'} support the image (at least 2 needed).`]);
+ const ok=posOK&&sup>=2;fb.unshift([ok?'ok':posOK?'warn':'bad',ok?'Correct: your construction finds the image.':posOK?'Position correct, but the construction is incomplete.':'Not correct yet.']);return{ok,fb}}
+function evalRay(){const r=S.rays.find(q=>q.id==practice.rid),tr=r&&trace(r);if(!tr)return{ok:false,fb:[['warn','The incident ray is not valid.']]};
+ const T=tr.T,L=tr.L,P=T.pts,n=P.length,E=srt(),e0=E[0],fb=[],ls=S.lines.filter(l=>l.vis),nrm=v=>{const m=Math.hypot(v.x,v.y)||1;return{x:v.x/m,y:v.y/m}};
+ // one stage per element hit: the ray leaving element k must be drawn by the student, starting at the point where it meets that element
+ const st=P.map((p,k)=>({p,d:nrm(k<n-1?{x:P[k+1].x-p.x,y:P[k+1].y-p.y}:{x:T.fin.dx,y:T.fin.dy}),prev:k?nrm({x:p.x-P[k-1].x,y:p.y-P[k-1].y}):nrm({x:1,y:L.s})}));
+ const dl=(q,p,d)=>Math.abs((q.x-p.x)*d.y-(q.y-p.y)*d.x);
+ const stageFound=g=>ls.find(l=>dl(l.a,g.p,g.d)<.25&&dl(l.b,g.p,g.d)<.25&&(Math.abs(g.d.x*g.prev.y-g.d.y*g.prev.x)<.02||!(dl(l.a,g.p,g.prev)<.15&&dl(l.b,g.p,g.prev)<.15)));
+ // guideline for the first element: lens -> through O; mirror -> through S, or through C (a ray aimed at C reflects back on itself)
+ const gp=[{x:e0.x,y:0}];if(e0.t=='M')gp.push({x:e0.x-2*e0.f,y:0});
+ const guide=ls.some(l=>{const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y;return Math.abs(dx)>1e-9&&Math.abs(dy/dx-L.s)<.06&&gp.some(c=>dLine(c,l)<.25)});
+ const gtxt=e0.t=='M'?'a line parallel to the incident ray through C (or through the vertex S)':'a line through the centre O parallel to the incident ray';
+ fb.push([guide?'ok':'warn',guide?'Guideline found: '+gtxt+'.':'No guideline yet ('+gtxt+').']);
+ let ok=true;
+ for(let k=0;k<n;k++){const g=st[k],lab=n>1?'After element '+(k+1)+': ':'',found=stageFound(g);
+  if(found){fb.unshift(['ok',n>1?lab+'your line is the emerging ray.':'Correct: your line is the emerging ray.']);continue}
+  ok=false;const th=ls.find(l=>dLine(g.p,l)<.25&&!(dl(l.a,g.p,g.prev)<.15&&dl(l.b,g.p,g.prev)<.15));
+  if(th){const ux=th.b.x-th.a.x,uy=th.b.y-th.a.y,c=Math.abs(ux*g.d.x+uy*g.d.y)/Math.hypot(ux,uy),ang=Math.acos(Math.min(1,c))*180/Math.PI;fb.unshift(['bad',lab+`your line starts at the right point on the element, but its direction is off by about ${ang.toFixed(0)} degrees.`])}
+  else fb.unshift(['bad',lab+(k?'draw the ray leaving the previous element, starting where it meets this element.':'not correct yet: draw a line starting where the incident ray meets the element.')]);break}
+ if(ok&&n>1)fb.unshift(['ok','Correct: the ray is followed through all '+n+' element hits.']);
+ return{ok,fb}}
+function evaluate(){if(!practice)return;const r=practice.task=='image'?evalImage():evalRay();practice.fb=r.fb;pracUI();toast(r.ok?'Correct!':'Not yet, see the feedback')}
+function hintStep(){if(!practice)return;practice.hint=Math.min(3,practice.hint+1);const h=practice.hint-1;
+ const multi=S.els.length>1,mir=S.els[0]&&S.els[0].t=='M';
+ practice.hintTxt=practice.task=='image'?[multi?'Work element by element. Draw two principal rays from B through the first element (parallel to the axis, through its centre O or vertex S, or through its F). Then treat each emerging ray as the incident ray of the next element: draw a guideline through that element\u2019s centre parallel to the ray and use its focal plane. The images are where the last emerging rays meet.':'Use two or three principal rays from the object: parallel to the axis, through the centre (O or vertex S), and through F (through C for a mirror). Where their emerging rays meet is the image.','One principal ray is now shown faintly. Draw it yourself with the construction line tool, then continue with another one.','All principal rays are shown faintly. Reproduce at least two with construction lines and mark where they meet.'][h]:[(mir?'Draw a guideline parallel to the incident ray, through C (it reflects back on itself) or through the vertex S (reflect it with the axis as the mirror line). The emerging ray goes through the point where the reflected guideline meets the focal plane F.':'Draw the guideline: a line through the centre O parallel to the incident ray. The emerging ray goes through the point where the guideline meets the focal plane F\u2032.')+(multi?' Repeat for each following element, using your own emerging ray as its incident ray.':''),'The guideline and the focal planes are now shown faintly.','The emerging ray is now shown faintly.'][h];pracUI();draw()}
+// ---- workspaces: sandbox and practice each own their scene, history, view, tool and display options
+const wsSave=()=>({S,uid,hist:{...hist},view:{...view},tool,practice,curId,curName,savedJ,pre:pre.value,chk:{vall:$('vall').checked,fp:$('fp').checked,pl:$('pl').checked}});
+function wsLoad(w){drag=null;S=w.S;uid=w.uid;Object.assign(hist,w.hist);Object.assign(view,w.view);practice=w.practice;curId=w.curId;curName=w.curName;savedJ=w.savedJ;pre.value=w.pre;
+ $('vall').checked=w.chk.vall;$('fp').checked=w.chk.fp;$('pl').checked=w.chk.pl;LP=null;par=null;TR=null;S.prev=null;S.snapPt=null;S.pl=null;setTool(w.tool);panel();updBtns()}
+function switchMode(m){if(m==mode)return;
+ if(m=='practice'&&!WS.practice){newExercise();return}
+ WS[mode]=wsSave();mode=m;wsLoad(WS[m]);WS[m]=null}
+function newExercise(id){id=id||$('pex').value;const d=exerciseDef(id);if(mode!='practice'){WS[mode]=wsSave();mode='practice'}
+ S={els:[],objs:[],rays:[],lines:[]};uid=1;Object.assign(hist,{u:[],r:[],cur:null,key:null,t:0});Object.assign(view,HOME);practice=null;curId=null;curName=null;savedJ=null;drag=null;LP=null;par=null;TR=null;
+ $('fp').checked=false;$('pl').checked=false;buildExercise(d);startPractice(d.task,id)}
+function nextExercise(){const id=practice?practice.ex:$('pex').value,d=exerciseDef(id);if(d.rand){newExercise(id);return}
+ const list=EX.filter(e=>(e.grp||e.task)==(d.grp||d.task));newExercise(list[(list.findIndex(e=>e.id==id)+1)%list.length].id)}
+$('mSand').onclick=()=>switchMode('sandbox');$('mPrac').onclick=()=>switchMode('practice');
+function pracUI(){const on=!!practice;document.body.classList.toggle('practice',on);
+ [['mSand',!on],['mPrac',on]].forEach(([id,v])=>{$(id).classList.toggle('on',v);$(id).setAttribute('aria-selected',v)});
+ const img=on&&practice.task=='image';setDis('[data-tool=mark]',!img);document.querySelectorAll('[data-tool=mark]').forEach(b=>b.title=img?'Mark answer (X)':'Mark answer (X): only in the "find the image" exercise');
+ if(on)$('pex').value=practice.ex;document.querySelectorAll('[data-act=hint] .t').forEach(e=>e.textContent='Hint ('+(on?practice.hint:0)+'/3)');
+ const f=$('pfb');f.innerHTML='';if(!on)return;const add=(c,t)=>{const d=document.createElement('div');d.style.cssText='margin:3px 0;color:'+({ok:'#2a9d4a',bad:'#e04b4b',warn:'#c98a00',hint:'inherit'}[c]);d.textContent=({ok:'\u2713 ',bad:'\u2717 ',warn:'! ',hint:'\u2139 '}[c])+t;f.appendChild(d)};
+ if(practice.revealed)add('hint','Solution shown: the traced rays and the image are now visible.');if(practice.hintTxt)add('hint',practice.hintTxt);(practice.fb||[]).forEach(([c,t])=>add(c,t))}
+['vall','fp','pl'].forEach(i=>$(i).onchange=draw);
+addEventListener('resize',draw);
+load('Single a) converging lens');pre.value='Single a) converging lens';
+</script></body></html>
