@@ -33,11 +33,11 @@ body.practice .mode button.on { background: var(--pcd); color: var(--pcfg); }
 .only-wide { display: none !important; }
 
 /* ---------- canvas and its overlays ---------- */
-.cvw { position: relative; }
+.cvw { position: relative; padding-top: 50px; } /* the preset picker and layers button sit in this strip above the canvas */
 body.practice canvas { border: 2px solid var(--pc); }
 .ov { position: absolute; z-index: 2; }
-.ov.tl { left: 8px; top: 8px; max-width: calc(100% - 68px); }
-.ov.tr { right: 8px; top: 8px; width: 40px; height: 40px; }
+.ov.tl { left: 0; top: 0; max-width: calc(100% - 52px); }
+.ov.tr { right: 0; top: 0; width: 42px; height: 42px; }
 .ov.tr svg { width: 20px; height: 20px; }
 .ov.tr[aria-expanded="true"] { background: var(--ac); color: #fff; border-color: var(--ac); }
 .ov.bl { left: 8px; bottom: 8px; max-width: calc(100% - 172px); padding: 5px 11px; font-size: 12px; line-height: 1.35; white-space: pre-line; border-radius: 12px; }
@@ -48,7 +48,7 @@ body.practice #chipPrac { display: block; }
 body.practice #chipPrac select { border-color: var(--pc); font-weight: 600; }
 .zoom { right: 8px; bottom: 8px; z-index: 2; }
 
-.pop { display: none; position: absolute; right: 8px; top: 54px; z-index: 6; width: 270px; max-width: calc(100% - 16px); box-sizing: border-box;
+.pop { display: none; position: absolute; right: 0; top: 48px; z-index: 6; width: 270px; max-width: calc(100% - 16px); box-sizing: border-box;
   background: var(--card); border: 1px solid var(--bd); border-radius: 16px; box-shadow: 0 12px 32px rgba(20,30,60,.22); padding: 4px 16px 10px; }
 .pop.open { display: block; }
 .ph { margin: 12px 0 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
