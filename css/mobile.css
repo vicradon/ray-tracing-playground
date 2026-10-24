@@ -3,6 +3,11 @@
 button, select, .seg button { touch-action: manipulation; }
 canvas { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #ctx { max-width: calc(100vw - 16px); }
+.pal button { touch-action: pan-x; } /* vertical finger moves drag the item; horizontal ones scroll the toolbar */
+.palghost { position: fixed; z-index: 40; width: 44px; height: 44px; margin: -60px 0 0 -22px; display: flex; align-items: center; justify-content: center;
+  background: var(--card); color: var(--fg); border: 2px dashed var(--bd); border-radius: 10px; pointer-events: none; opacity: .9; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.palghost.ok { border-color: var(--ac); border-style: solid; }
+.palghost svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 details.help > summary { cursor: pointer; font-size: 13px; opacity: .8; margin-top: 4px; list-style-position: inside; }
 details.help[open] > summary { margin-bottom: 4px; }
