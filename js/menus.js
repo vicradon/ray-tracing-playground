@@ -9,8 +9,10 @@ function showMenu(ev,items){ctx.innerHTML='';items.forEach(it=>{if(it.sep){ctx.a
  const d=document.createElement('div');
  d.textContent=(it.chk===undefined?'':(it.chk?'\u2713 ':'\u2003 '))+it.l;if(it.k){const k=document.createElement('span');k.className='k';k.textContent=it.k;d.appendChild(k)}
  if(it.dis)d.className='d';else if(it.h)d.className='h';else d.onclick=()=>{ctx.style.display='none';it.f();done()};ctx.appendChild(d)});
- ctx.style.display='block';ctx.style.left=Math.min(ev.clientX,innerWidth-230)+'px';ctx.style.top=Math.min(ev.clientY,innerHeight-ctx.offsetHeight-8)+'px'}
-cv.oncontextmenu=ev=>{ev.preventDefault();const p=wp(ev);let items=null;
+ ctx.style.display='block';ctx.style.left=Math.max(8,Math.min(ev.clientX,innerWidth-ctx.offsetWidth-8))+'px';ctx.style.top=Math.min(ev.clientY,innerHeight-ctx.offsetHeight-8)+'px'}
+cv.oncontextmenu=ev=>{ev.preventDefault();
+ if(ev.touch||ev.pointerType=='touch'||tps.size){if(Date.now()-lpAt<1000)return;lpAt=Date.now();cancelGesture();if(navigator.vibrate)navigator.vibrate(12)} // long press: our timer or the browser's own, whichever comes first
+ const p=wp(ev);let items=null;
  if(practice){const ho=(S.hnd||[]).find(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)),l=ho&&ho.k=='lp'?S.lines.find(q=>q.id==ho.id):S.lines.find(q=>lineHit(q,p,.3));if(l)showMenu(ev,lineMenu(l.id));else if(ho&&ho.k=='ans')showMenu(ev,[{l:'Answer marker',h:1},{l:'Remove marker',f:()=>{practice.ans=null}}]);return}
  const ho=(S.hnd||[]).filter(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)).sort((a,b)=>(a.k=='obj'?0:1)-(b.k=='obj'?0:1))[0];
  if(ho&&ho.k=='obj'){const i=ho.i,o=S.objs[i];items=[{l:(o.ext?'Arrow':'Point')+' object',h:1},{l:'Add principal rays',f:()=>principal(i)},{l:o.ext?'Make point object':'Make arrow object',f:()=>{o.ext=!o.ext;if(o.ext&&Math.abs(o.y)<.1)o.y=3}},{l:'Remove object',f:()=>delObj(i)}]}

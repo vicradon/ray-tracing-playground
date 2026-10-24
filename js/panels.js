@@ -26,7 +26,7 @@ function panel(){renderLines();pracUI();const els=$('els'),objs=$('objs'),rays=$
  btn.onclick=()=>{if(!S.els.length)return;const src=+a.value;let aim;if(src<0||b.value=='hit')aim={k:'hit',h:2};else if(b.value=='par')aim={k:'par'};else{const[id,p]=b.value.split(':');aim={k:'pt',el:+id,p}}
   if(src>=0&&aim.k=='hit'){const o=S.objs[src];aim.h=o.y>0?o.y/2:2}
   addRay(src,aim);panel();draw()}}
-function add(t,p){if(practice){toast('Adding elements is disabled in practice mode');return}p=p||{x:9,y:3};const x=clx(sn(p.x));
+function add(t,p){if(practice){toast('Adding elements is disabled in practice mode');return}p=p||(atHome()?{x:9,y:3}:{x:view.x0+W/2/view.z,y:view.y0-H/2/view.z}); // buttons (no drop point) add in the middle of the current viewconst x=clx(sn(p.x));
  if(t[0]=='L'||t[0]=='M')S.els.push({id:uid++,t:t[0],x,f:t[1]=='-'?-pref.f:pref.f});
  else S.objs.push({x,y:t=='A'?(Math.abs(p.y)<.3?3:sn(p.y)):sn(p.y),ext:t=='A'});panel();draw()}
 document.querySelectorAll('[data-add]').forEach(b=>{b.onclick=()=>add(b.dataset.add);b.ondragstart=e=>e.dataTransfer.setData('text/plain',b.dataset.add)});

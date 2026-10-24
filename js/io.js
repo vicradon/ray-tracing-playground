@@ -30,7 +30,8 @@ async function openDlg(){let list;try{list=(await DB.all()).sort((a,b)=>b.update
   const bd=btn('Delete',async()=>{if(bd.dataset.s!='1'){bd.dataset.s='1';bd.textContent='Sure?';return}await DB.del(r.id);if(curId==r.id)curId=null;row.remove();updTitle()});
   row.append(im,nm,btn('Open',()=>{loadJSON(r.data,r.id,r.name);closeModal()}),btn('Rename',()=>renameDlg(r)),bd);d.appendChild(row)});
  modal('Saved configurations',d,[{l:'Close'}])}
-async function dl(filename,data){const d=typeof claude!=='undefined'&&claude.use?await claude.use('downloads'):null;if(!d){toast('File export is not available in this view');return}
+async function dl(filename,data){const d=typeof claude!=='undefined'&&claude.use?await claude.use('downloads'):null;
+ if(!d){const u=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);toast('Exported '+filename);return} // plain browser download outside Claude
  try{await d.save({filename,data});toast('Exported '+filename)}catch(e){if(!e||e.code!='declined')toast('Could not export: '+((e&&(e.message||e.code))||'error'))}}
 async function renderImage(){const root=document.documentElement,prev=root.dataset.theme;if(pref.light)root.dataset.theme='light';
  forceW=2000;exporting=true;const vs={...view};Object.assign(view,HOME);draw();const o=document.createElement('canvas');o.width=cv.width;o.height=cv.height;const c=o.getContext('2d');c.fillStyle=css('--card');c.fillRect(0,0,o.width,o.height);c.drawImage(cv,0,0);
@@ -69,7 +70,7 @@ function shortcutsDlg(){const rows=[['Tools',[['M','Move'],['T','Trace ray'],['S
  ['File and history',[['Ctrl+Z / Ctrl+Y','Undo / redo'],['Ctrl+S','Save'],['Ctrl+O','Open saved'],['Ctrl+E','Export PNG'],['Ctrl+Shift+E','Export PDF'],['?','This list']]]];
  const d=document.createElement('div');rows.forEach(([t,L])=>{const h=document.createElement('div');h.innerHTML='<b></b>';h.firstChild.textContent=t;h.style.marginTop='8px';d.appendChild(h);
   L.forEach(([k,v])=>{const r=document.createElement('div');r.className='row';r.style.margin='2px 0';const kb=document.createElement('code');kb.textContent=k;kb.style.cssText='min-width:110px;display:inline-block;background:var(--grid);padding:1px 6px;border-radius:4px';const sp=document.createElement('span');sp.textContent=v;r.append(kb,sp);d.appendChild(r)})});
- const n=document.createElement('div');n.className='muted';n.style.marginTop='8px';n.textContent='Digits use the physical number row, so they work on AZERTY keyboards without Shift. Mouse: drag things with Move; right-click for context menus.';d.appendChild(n);modal('Keyboard shortcuts',d)}
+ const n=document.createElement('div');n.className='muted';n.style.marginTop='8px';n.textContent='Digits use the physical number row, so they work on AZERTY keyboards without Shift. Mouse: drag things with Move; right-click for context menus. Touch: long-press for context menus, drag empty space with Move to pan, pinch to zoom; with the line and Mark tools, press, slide to the snap point and release.';d.appendChild(n);modal('Shortcuts, mouse and touch',d)}
 const MENUS={
  file:()=>[{l:'New (empty sandbox)',f:()=>{pre.value='Empty sandbox';load('Empty sandbox')}},{l:'Open saved\u2026',k:'Ctrl+O',f:openDlg},{sep:1},{l:'Save',k:'Ctrl+S',f:saveCur,dis:mode!='sandbox'},{l:'Save as\u2026',f:()=>saveDlg(true),dis:mode!='sandbox'},{sep:1},
   {l:'Export image (PNG)',k:'Ctrl+E',f:()=>exportImg('png')},{l:'Export image (JPEG)',f:()=>exportImg('jpg')},{l:'Export PDF',k:'Ctrl+Shift+E',f:exportPDF},{sep:1},{l:'Export configuration (.json)',f:exportJSON,dis:mode!='sandbox'},{l:'Import configuration (.json)\u2026',f:()=>$('imp').click()}],
@@ -78,7 +79,7 @@ const MENUS={
  prefs:()=>[{l:'Snap step 0.25',chk:pref.step==.25,f:()=>setPref({step:.25})},{l:'Snap step 0.5',chk:pref.step==.5,f:()=>setPref({step:.5})},{l:'Snap step 1',chk:pref.step==1,f:()=>setPref({step:1})},{sep:1},
   {l:'Theme: system',chk:pref.theme=='auto',f:()=>setPref({theme:'auto'})},{l:'Theme: light',chk:pref.theme=='light',f:()=>setPref({theme:'light'})},{l:'Theme: dark',chk:pref.theme=='dark',f:()=>setPref({theme:'dark'})},{sep:1},
   {l:'Export with light background',chk:pref.light,f:()=>setPref({light:!pref.light})},{l:'Default focal length ('+pref.f+')\u2026',f:fDlg}],
- help:()=>[{l:'Keyboard shortcuts and mouse\u2026',k:'?',f:shortcutsDlg}]};
+ help:()=>[{l:'Shortcuts, mouse and touch\u2026',k:'?',f:shortcutsDlg}]};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();const r=b.getBoundingClientRect();showMenu({clientX:r.left,clientY:r.bottom+2},MENUS[b.dataset.m]())});
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(e.key=='Escape')closeModal();if((e.ctrlKey||e.metaKey)&&k=='s'){e.preventDefault();saveCur()}if((e.ctrlKey||e.metaKey)&&k=='o'){e.preventDefault();openDlg()}if((e.ctrlKey||e.metaKey)&&k=='e'){e.preventDefault();e.shiftKey?exportPDF():exportImg('png')}});
 let lastP=null;cv.addEventListener('pointermove',e=>{lastP=wp(e)});cv.addEventListener('pointerleave',()=>{lastP=null});

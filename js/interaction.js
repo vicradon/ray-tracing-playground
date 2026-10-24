@@ -38,27 +38,41 @@ let gz=1;cv.addEventListener('gesturestart',ev=>{ev.preventDefault();gz=view.z})
 const tps=new Map();let pinch=null,panD=null,spaceDown=false;
 const curs=()=>{cv.style.cursor=panD?'grabbing':spaceDown?'grab':tool=='move'?'default':'crosshair'};
 const pinchMid=()=>{const[a,b]=[...tps.values()];return{x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)||1}};
+// touch: a long press (finger held still) opens the context menu, the touch equivalent of a right-click
+let lpT=null,lpS=null,lpAt=0;const lpCancel=()=>{clearTimeout(lpT);lpT=null};
+function cancelGesture(){lpCancel();drag=null;panD=null;TR=null;S.prev=null;S.snapPt=null;S.snapLbl='';S.pl=null;draw()} // drop whatever the finger was doing
 cv.addEventListener('pointerdown',ev=>{
  if(ev.pointerType=='touch'){tps.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
-  if(tps.size==2){drag=null;S.prev=null;S.snapPt=null;const m=pinchMid(),[fx,fy]=fracOf(m.x,m.y);pinch={z0:view.z,d0:m.d,wx:view.x0+fx*W/view.z,wy:view.y0-fy*H/view.z};draw();ev.stopImmediatePropagation();return}
+  if(tps.size==1){lpCancel();lpS={x:ev.clientX,y:ev.clientY};lpT=setTimeout(()=>{lpT=null;if(tps.size==1)cv.oncontextmenu({clientX:lpS.x,clientY:lpS.y,touch:true,preventDefault(){}})},500)}
+  if(tps.size==2){lpCancel();drag=null;panD=null;S.prev=null;S.snapPt=null;S.pl=null;const m=pinchMid(),[fx,fy]=fracOf(m.x,m.y);pinch={z0:view.z,d0:m.d,wx:view.x0+fx*W/view.z,wy:view.y0-fy*H/view.z};draw();ev.stopImmediatePropagation();return}
   if(tps.size>2){ev.stopImmediatePropagation();return}}
  if(ev.button==1||(ev.button==0&&spaceDown)){ev.preventDefault();panD={x:ev.clientX,y:ev.clientY};cv.setPointerCapture(ev.pointerId);curs();ev.stopImmediatePropagation()}});
 cv.addEventListener('pointermove',ev=>{if(tps.has(ev.pointerId))tps.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+ if(lpT&&Math.hypot(ev.clientX-lpS.x,ev.clientY-lpS.y)>10)lpCancel();
  if(pinch&&tps.size>=2){const m=pinchMid(),[fx,fy]=fracOf(m.x,m.y);setView(pinch.z0*m.d/pinch.d0,fx,fy,pinch.wx,pinch.wy);ev.stopImmediatePropagation();return}
  if(panD){panPx(panD.x-ev.clientX,panD.y-ev.clientY);panD={x:ev.clientX,y:ev.clientY};ev.stopImmediatePropagation()}});
-const endPtr=ev=>{tps.delete(ev.pointerId);if(tps.size<2)pinch=null;if(panD){panD=null;curs();ev.stopImmediatePropagation()}};
+const endPtr=ev=>{lpCancel();tps.delete(ev.pointerId);if(tps.size<2)pinch=null;if(panD){panD=null;curs();ev.stopImmediatePropagation()}};
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 addEventListener('keydown',e=>{if(e.code=='Space'&&!/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)&&$('mdl').style.display!='flex'){spaceDown=true;curs();e.preventDefault()}});
 addEventListener('keyup',e=>{if(e.code=='Space'){spaceDown=false;curs()}});addEventListener('blur',()=>{spaceDown=false;curs()});
+const ptTool=()=>(tool=='line'||tool=='cons'||(tool=='mark'&&practice&&practice.task=='image'))&&!par;
+function placePt(q){ // q is an already snapped point: start/finish a line, or place the answer marker
+ if(tool=='mark'){practice.ans=q;S.pl=null}
+ else{if(!LP)LP=q;else{if(Math.hypot(q.x-LP.x,q.y-LP.y)>1e-6)S.lines.push({id:uid++,a:LP,b:q,vis:true,k:tool=='cons'?'cons':'bold'});LP=null}S.pl=q}
+ panel();draw()}
 cv.onpointerdown=ev=>{if(ev.button!==0)return;const p=wp(ev);let best=null,bd=1e9;
- if((tool=='line'||tool=='cons')&&!par){const q=snapAt(p,LP);if(!LP)LP=q;else{if(Math.hypot(q.x-LP.x,q.y-LP.y)>1e-6)S.lines.push({id:uid++,a:LP,b:q,vis:true,k:tool=='cons'?'cons':'bold'});LP=null}S.pl=q;panel();draw();return}
- if(tool=='mark'){if(practice&&practice.task=='image'){practice.ans=snapAt(p);S.pl=null;panel();draw()}return}
+ // touch: the finger hides the point, so press, slide to the snap you want (shown live) and place it on release
+ if(ev.pointerType=='touch'&&ptTool()){drag={k:'tp'};cv.setPointerCapture(ev.pointerId);S.pl=snapAt(p,tool=='mark'?null:LP);draw();return}
+ if((tool=='line'||tool=='cons')&&!par){placePt(snapAt(p,LP));return}
+ if(tool=='mark'){if(ptTool())placePt(snapAt(p));return}
  if(par){const q=parPt(p);addRay(-1,{k:'dir',ref:par,x:q.x,y:q.y});par=null;S.prev=null;S.snapPt=null;panel();draw();return}
  if(tool=='trace'){let src=-1;S.objs.forEach((q,i)=>{const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;src=i}});TR={src,y0:sn(p.y),p0:p};drag={k:'T'};cv.setPointerCapture(ev.pointerId);return}
  (S.hnd||[]).forEach(h=>{const d=Math.hypot(h.x-p.x,h.y-p.y);if(d<tol(.6)&&d<bd){bd=d;best=h}});
  if(best){drag=best}else if(!practice)S.els.forEach((e,i)=>{if(Math.abs(e.x-e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8)&&!best)best=drag={k:'F',i};else if(Math.abs(e.x-p.x)<tol(.35)&&!best)best=drag={k:'E',i}});
- if(best){drag=best;dragN++;cv.setPointerCapture(ev.pointerId)}};
-cv.onpointermove=ev=>{if(!drag){if((tool=='line'||tool=='cons'||tool=='mark')&&!par){S.snapPt=null;S.snapLbl='';S.pl=snapAt(wp(ev),tool=='mark'?null:LP);draw();return}if(par){S.snapPt=null;const q=parPt(wp(ev));S.prev={id:-1,src:-1,aim:{k:'dir',ref:par,x:q.x,y:q.y},y0:0,vis:true};draw()}return}const p=wp(ev),e=S.els[drag.i],r=S.rays.find(q=>q.id==drag.id);
+ if(best){drag=best;dragN++;cv.setPointerCapture(ev.pointerId)}
+ else if(ev.pointerType=='touch'&&tool=='move'){panD={x:ev.clientX,y:ev.clientY};cv.setPointerCapture(ev.pointerId)}}; // one finger on empty space pans
+cv.onpointermove=ev=>{if(drag&&drag.k=='tp'){S.pl=snapAt(wp(ev),tool=='mark'?null:LP);draw();return}
+ if(!drag){if((tool=='line'||tool=='cons'||tool=='mark')&&!par){S.snapPt=null;S.snapLbl='';S.pl=snapAt(wp(ev),tool=='mark'?null:LP);draw();return}if(par){S.snapPt=null;const q=parPt(wp(ev));S.prev={id:-1,src:-1,aim:{k:'dir',ref:par,x:q.x,y:q.y},y0:0,vis:true};draw()}return}const p=wp(ev),e=S.els[drag.i],r=S.rays.find(q=>q.id==drag.id);
  if(drag.k=='lp'){const l=S.lines.find(q=>q.id==drag.id);if(l){const q=snapAt(p,drag.end=='a'?l.b:l.a,l.id);l[drag.end]={x:q.x,y:q.y}}draw();return}
  if(drag.k=='ans'){practice.ans=snapAt(p);draw();return}
  if(drag.k=='T'){S.snapPt=null;const aim=aimFrom(p,TR.src);S.prev=aim?{id:-1,src:TR.src,aim,y0:TR.y0,vis:true}:null;draw();return}
@@ -69,4 +83,4 @@ cv.onpointermove=ev=>{if(!drag){if((tool=='line'||tool=='cons'||tool=='mark')&&!
  else if(drag.k=='rh'&&r)r.aim.h=sn(Math.max(-6.5,Math.min(6.5,p.y)));
  else if(drag.k=='rs'&&r){const E0=srt()[0],h=r.aim.h,sl=(h-p.y)/(E0.x-.25);r.y0=p.y-sl*.25}
  draw()};
-cv.onpointerup=ev=>{if(!drag)return;if(drag.k=='T'){const p=wp(ev);if(S.prev&&Math.hypot(p.x-TR.p0.x,p.y-TR.p0.y)>tol(.3)){const r=addRay(S.prev.src,S.prev.aim);r.y0=TR.y0}S.prev=null;S.snapPt=null}drag=null;panel();draw()};
+cv.onpointerup=ev=>{if(!drag)return;if(drag.k=='tp'){drag=null;const q=S.pl||snapAt(wp(ev),tool=='mark'?null:LP);if(tool!='mark')S.snapPt=null;placePt(q);return}if(drag.k=='T'){const p=wp(ev);if(S.prev&&Math.hypot(p.x-TR.p0.x,p.y-TR.p0.y)>tol(.3)){const r=addRay(S.prev.src,S.prev.aim);r.y0=TR.y0}S.prev=null;S.snapPt=null}drag=null;panel();draw()};
