@@ -72,7 +72,8 @@ function pracUI(){const on=!!practice;document.body.classList.toggle('practice',
  [['mSand',!on],['mPrac',on]].forEach(([id,v])=>{$(id).classList.toggle('on',v);$(id).setAttribute('aria-selected',v)});
  const img=on&&practice.task=='image';setDis('[data-tool=mark]',!img);document.querySelectorAll('[data-tool=mark]').forEach(b=>b.title=img?'Mark answer (X)':'Mark answer (X): only in the "find the image" exercise');
  if(on)$('pex').value=practice.ex;document.querySelectorAll('[data-act=hint] .t').forEach(e=>e.textContent='Hint ('+(on?practice.hint:0)+'/3)');
- const f=$('pfb');f.innerHTML='';if(!on)return;const add=(c,t)=>{const d=document.createElement('div');d.style.cssText='margin:3px 0;color:'+({ok:'#2a9d4a',bad:'#e04b4b',warn:'#c98a00',hint:'inherit'}[c]);d.textContent=({ok:'\u2713 ',bad:'\u2717 ',warn:'! ',hint:'\u2139 '}[c])+t;f.appendChild(d)};
+ const f=$('pfb');f.innerHTML='';if(!on)return;
+ $('ptask').textContent=practice.task=='image'?`Find the image of ${S.objs[0]&&S.objs[0].ext?'B':'A'}: draw at least two rays with Line or Construct, mark where they meet with Mark, then Check.`:'Construct the ray that emerges'+(S.els.length>1?' from each element in turn':'')+', starting where the given ray meets the element, then Check.';const add=(c,t)=>{const d=document.createElement('div');d.style.cssText='margin:3px 0;color:'+({ok:'#2a9d4a',bad:'#e04b4b',warn:'#c98a00',hint:'inherit'}[c]);d.textContent=({ok:'\u2713 ',bad:'\u2717 ',warn:'! ',hint:'\u2139 '}[c])+t;f.appendChild(d)};
  if(practice.revealed)add('hint','Solution shown: the traced rays and the image are now visible.');if(practice.hintTxt)add('hint',practice.hintTxt);(practice.fb||[]).forEach(([c,t])=>add(c,t))}
 ['vall','fp','pl'].forEach(i=>$(i).onchange=draw);
 addEventListener('resize',draw);

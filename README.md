@@ -7,8 +7,12 @@ Open `index.html` in a browser (no build step). Works with mouse, keyboard and t
 ## Layout
 
 - `index.html` – page structure
-- `css/styles.css` – base styles; `css/mobile.css` – touch and small-screen adjustments
-- `js/` – plain scripts loaded in order: `config` → `toolbar` → `optics` → `render` → `panels` → `interaction` → `menus` → `io` → `construct` → `practice` → `main`
+- `css/styles.css` – base styles; `css/layout.css` – app layout for phones and wide screens
+- `js/` – plain scripts loaded in order: `config` → `toolbar` → `optics` → `render` → `panels` → `interaction` → `menus` → `io` → `construct` → `practice` → `ui` (selection, inspector, scene list, sheets) → `main`
+
+## Using it
+
+Tap anything on the canvas (or in the Scene list) to edit it. Tools sit in the dock: Move, Ray, Line, Construct, and + to add lenses, mirrors, objects or a free ray. Display and snapping switches are behind the layers button on the canvas.
 
 ## Touch
 

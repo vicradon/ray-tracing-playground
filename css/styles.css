@@ -3,9 +3,7 @@
 :root[data-theme="dark"]{--bg:#12151f;--fg:#e6e9f4;--card:#1b2030;--grid:#2a3042;--axis:#8a93ad;--img:#ff9a5c;--bd:#323955;--ac:#7f93d6}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
-.wrap{max-width:1100px;margin:0 auto;padding:12px}
 h1{font-size:18px;margin:4px 0 10px}h2{font-size:14px;margin:0 0 4px}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 select,input,button{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:4px 8px}
 button{cursor:pointer}button.on{background:var(--ac);color:#fff}
 input[type=number]{width:64px}input[type=checkbox]{padding:0}
@@ -14,14 +12,8 @@ canvas{width:100%;display:block;background:var(--card);border:1px solid var(--bd
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0}
 .muted{opacity:.75;font-size:13px}
 button:disabled{opacity:.4;cursor:default}
-.tb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 8px}
 .grp{display:flex;gap:4px;align-items:center}.sep{width:1px;align-self:stretch;background:var(--bd)}.grow{flex:1}
-.lbl{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.05em;margin-right:2px}
-.tb button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 8px;min-width:38px}
-.tb button small{font-size:10px;opacity:.85;line-height:1}
 .tb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
-.pal button{cursor:grab}.small button{padding:3px 6px;opacity:.85;cursor:grab}.small svg{width:16px;height:16px}
-.mb{display:flex;gap:2px;align-items:center;margin-bottom:6px}.mb .seg{margin-left:auto}
 .mb button{border:0;background:none;padding:3px 10px;border-radius:6px}.mb button:hover{background:var(--grid)}
 #ctx hr{border:0;border-top:1px solid var(--bd);margin:4px 0}#ctx .k{float:right;opacity:.6;margin-left:18px;font-size:12px}
 #mdl{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20}
@@ -44,16 +36,9 @@ button:disabled{opacity:.4;cursor:default}
 .seg button.on{background:var(--ac);color:#fff}
 body.practice .seg{border-color:var(--pc)}body.practice .seg button.on{background:var(--pc)}
 /* ---- practice mode ---- */
-:root{--pc:#d97f00;--pcbg:rgba(224,138,0,.13)}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--pc:#ffb347;--pcbg:rgba(255,179,71,.14)}}
-:root[data-theme="dark"]{--pc:#ffb347;--pcbg:rgba(255,179,71,.14)}
-#tbPrac,#prac{display:none}body.practice #tbPrac{display:flex}body.practice #prac{display:block}body.practice #tbSand{display:none}
-.tb .badge{background:var(--pc);color:#fff;font-weight:700;letter-spacing:.06em;font-size:12px;padding:3px 10px;border-radius:999px}
-.tb button .t{font-size:13px;padding:2px 2px}.tb button.primary{background:var(--pc);border-color:var(--pc);color:#fff}
-#tbPrac{border:2px solid var(--pc);background:linear-gradient(var(--pcbg),var(--pcbg)),var(--card)}
-body.practice canvas{border:2px solid var(--pc);box-shadow:0 0 0 3px var(--pcbg)}
+:root{--pc:#d97f00;--pcbg:rgba(224,138,0,.13);--pcd:#a35a00;--pcfg:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--pc:#ffb347;--pcbg:rgba(255,179,71,.14);--pcd:#ffb347;--pcfg:#1b1300}}
+:root[data-theme="dark"]{--pc:#ffb347;--pcbg:rgba(255,179,71,.14);--pcd:#ffb347;--pcfg:#1b1300}
 body.practice #prac{border:2px solid var(--pc);background:linear-gradient(var(--pcbg),var(--pcbg)),var(--card)}
 .dis{opacity:.32;filter:grayscale(1);cursor:not-allowed!important}
-body.practice .lockable{opacity:.32;filter:grayscale(1);pointer-events:none;user-select:none}
-body.practice .lockable h2::after{content:" \1F512 locked in practice mode";font-weight:400;font-size:12px}
 #ctx div.d{opacity:.35;cursor:not-allowed}#ctx div.d:hover{background:none;color:inherit}

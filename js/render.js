@@ -46,7 +46,7 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
    cross(e.x,0,fg);txo('S'+n,e.x,0,-.7,-.6,fg,17);cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);cross(e.x-2*e.f,0,fg,'C'+n,-.2,-.6)}});
  const imgs=S.objs.map((_,i)=>imageOf(i));
  if($('vall').checked)S.rays.forEach(r=>{if(!r.vis)return;const tr=trace(r);if(!tr)return;if(practice&&!practice.revealed){if(practice.task=='ray'&&r.id==practice.rid){const L=tr.L,e0=srt()[0],a=incSeg(L,e0,tr.h);ln(a[0],a[1],a[2],a[3],OC,2.2);S.segs.push({id:r.id,a:[a]})}return}drawTrace(tr,rayCol(r),r.aim.k=='guide'?[6,4]:null,r.src>=0?imgs[r.src].pt:null,aimTarget(r));S.segs.push({id:r.id,a:raySegs(tr)})});
- let info='';const hnd=[];drawExtras(hnd,E,ax);
+ let info='';const R=[],hnd=[],f2=v=>+v.toFixed(2);drawExtras(hnd,E,ax);
  S.objs.forEach((o,i)=>{const n=onm(i);
   if(o.ext){arrow(o.x,0,o.y,OC);txo('A'+n,o.x,0,-.5,-.7,OC,17);txo('B'+n,o.x,o.y,-.5,.3,OC,17)}else cross(o.x,o.y,OC,'A'+n,-.15,-.7);
   if(!practice)hnd.push({k:'obj',i,x:o.x,y:o.y});
@@ -54,8 +54,8 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
   if(im.pt&&!(practice&&!practice.revealed)){const p=im.pt,f=im.R[0].tr.T.fin,real=(p.x-f.x)*f.dx>0;
    if($('pl').checked){ln(o.x,-6.5,o.x,6.5,ax,1,[4,4]);txo('P'+n,o.x,-6.2,.1,0,ax,15);ln(p.x,-6.5,p.x,6.5,ax,1,[4,4]);txo("P′"+n,p.x,-6.2,.1,0,ax,15)}
    if(o.ext){arrow(p.x,0,p.y,img,'B′'+n,real?0:[5,4]);txo('A′'+n,p.x,0,-.5,p.y>0?-.7:.3,img,17)}else cross(p.x,p.y,img,'A′'+n,-.15,-.7);
-   info+=`Image of ${o.ext?'B':'A'}${n}: x = ${p.x.toFixed(2)}, y = ${p.y.toFixed(2)} (${real?'real':'virtual'})`+(o.ext&&Math.abs(o.y)>1e-6?`, magnification ${(p.y/o.y).toFixed(2)} (${p.y*o.y<0?'inverted':'upright'})`:'')+'\n'}
-  else info+=`Object ${o.ext?'AB':'A'}${n}: need at least two non-parallel rays to locate its image.\n`});
+   R.push(`${o.ext?'B':'A'}${n}′ at (${f2(p.x)}, ${f2(p.y)}) · ${real?'real':'virtual'}`+(o.ext&&Math.abs(o.y)>1e-6?` · ×${f2(p.y/o.y)}`:''));info+=`Image of ${o.ext?'B':'A'}${n}: x = ${p.x.toFixed(2)}, y = ${p.y.toFixed(2)} (${real?'real':'virtual'})`+(o.ext&&Math.abs(o.y)>1e-6?`, magnification ${(p.y/o.y).toFixed(2)} (${p.y*o.y<0?'inverted':'upright'})`:'')+'\n'}
+  else if(S.els.length){R.push(`${o.ext?'AB':'A'}${n}: add two rays to find the image`);info+=`Object ${o.ext?'AB':'A'}${n}: need at least two non-parallel rays to locate its image.\n`}});
  const e0=E[0];
  S.rays.forEach(r=>{if(practice||!r.vis||!e0||r.aim.k=='guide'||!$('vall').checked)return;const L=lineOf(r);if(!L)return;
   if(r.aim.k=='at'||r.aim.k=='dir')hnd.push({k:'ra',id:r.id,x:r.aim.x,y:r.aim.y});
@@ -67,4 +67,4 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
    cx.save();cx.strokeStyle='#e08a00';cx.lineWidth=1.5*dpr;cx.setLineDash([]);[th,-th].forEach(t=>{const d=nm(t-a0);cx.beginPath();cx.arc(X(symG.x),Y(symG.y),34*dpr,-a0,-(a0+d),d>0);cx.stroke()});
    cx.restore()}}
  S.hnd=hnd;if(!exporting)hnd.forEach(h=>{cx.beginPath();cx.fillStyle=img;cx.globalAlpha=.35;cx.arc(X(h.x),Y(h.y),9*dpr,0,7);cx.fill();cx.globalAlpha=1});
- $('out').style.whiteSpace='pre-line';$('out').textContent=practice&&!practice.revealed?practiceMsg():par?'Parallel-ray mode: move to place the new ray (it keeps the direction of the chosen ray) and click to confirm. It snaps to O, S, F, F′, C and grid points. Esc cancels.':info||(S.rays.length?(S.rays.some(r=>r.aim.k=='guide')?'The emerging ray passes through the point where the guideline (through the centre, parallel to the incident ray) meets the focal plane.':'Rays traced.'):'Empty scene: drag a lens, mirror or object onto the canvas, then use the Trace ray tool.');commit();updTitle();updZoom()}
+ setRes(practice&&!practice.revealed?'':par?'Tap where the parallel ray should pass · Esc cancels':!S.els.length&&!S.objs.length?'Empty scene: tap + to add a lens, mirror or object':R.join('\n'));$('out').style.whiteSpace='pre-line';$('out').textContent=practice&&!practice.revealed?practiceMsg():par?'Parallel-ray mode: move to place the new ray (it keeps the direction of the chosen ray) and click to confirm. It snaps to O, S, F, F′, C and grid points. Esc cancels.':info||(S.rays.length?(S.rays.some(r=>r.aim.k=='guide')?'The emerging ray passes through the point where the guideline (through the centre, parallel to the incident ray) meets the focal plane.':'Rays traced.'):'Empty scene: drag a lens, mirror or object onto the canvas, then use the Trace ray tool.');commit();updTitle();updZoom()}

@@ -2,9 +2,6 @@
 // ---- construction lines, snapping, practice mode
 const delLine=l=>{S.lines=S.lines.filter(q=>q!==l)};
 function lineMenu(id){const l=S.lines.find(q=>q.id==id);if(!l)return null;const n=S.lines.indexOf(l)+1;return[{l:(l.k=='bold'?'Bold line ':'Construction line ')+n,h:1},{l:l.k=='bold'?'Make construction (dotted)':'Make bold',f:()=>{l.k=l.k=='bold'?'cons':'bold'}},{l:'Colour',h:1},{sws:LINE_COLORS,cur:l.c||LC,f:c=>{if(c==LC)delete l.c;else l.c=c}},{sep:1},{l:l.vis?'Hide line':'Show line',f:()=>{l.vis=!l.vis}},{l:'Remove line',f:()=>delLine(l)}]}
-function renderLines(){const d=$('lns');d.innerHTML='';if(!S.lines.length){d.appendChild(txt('<span class="muted">none: use the Bold line (L) or Construction line (C) tool</span>'));return}
- const f=v=>+v.toFixed(2);S.lines.forEach((l,i)=>{const r=document.createElement('div');r.className='row';const lab=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.checked=l.vis;c.onchange=()=>{l.vis=c.checked;draw()};
-  lab.append(c,document.createTextNode(` ${l.k=='bold'?'Bold':'Dotted'} ${i+1}: (${f(l.a.x)}, ${f(l.a.y)}) to (${f(l.b.x)}, ${f(l.b.y)})`));r.append(lab,btn('remove',()=>{delLine(l);panel();draw()}));d.appendChild(r)})}
 function sInter(a,b){const r=[a[2]-a[0],a[3]-a[1]],q=[b[2]-b[0],b[3]-b[1]],d=r[0]*q[1]-r[1]*q[0];if(Math.abs(d)<1e-9)return null;const t=((b[0]-a[0])*q[1]-(b[1]-a[1])*q[0])/d,u=((b[0]-a[0])*r[1]-(b[1]-a[1])*r[0])/d;return t>=0&&t<=1&&u>=0&&u<=1?{x:a[0]+t*r[0],y:a[1]+t*r[1]}:null}
 const rnd4=v=>Math.round(v*1e4)/1e4;
 const rayVis=r=>r.vis&&$('vall').checked&&(!practice||practice.revealed||(practice.task=='ray'&&r.id==practice.rid)); // rays the student can see (in practice: only the given ray until the solution is shown)
