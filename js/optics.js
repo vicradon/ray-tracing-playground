@@ -46,6 +46,14 @@ function prop(h,q){const E=srt();if(!E.length)return null;let i=0,dir=1,pts=[];
   let nx=null;for(const c of E){if((c.x-e.x)*dir>1e-9&&(dir>0||c.t=='L')&&(nx==null||Math.abs(c.x-e.x)<Math.abs(nx.x-e.x)))nx=c}
   if(!nx)break;h+=q*Math.abs(nx.x-e.x);i=E.indexOf(nx)}
  const l=pts[pts.length-1];return{pts,fin:{x:l.x,y:l.y,dx:dir,dy:q}}}
+// Principal planes of the whole system. The tracer is linear in (h, slope), so two traces give everything:
+// H′ is where a ray entering parallel to the axis at height 1 reaches height 1 again after the last element;
+// H is where the incident ray that leaves parallel to the axis reaches its exit height. Null for an afocal system.
+function principalPlanes(){const E=srt();if(!E.length)return null;
+ const A=prop(1,0),a=A.fin.dy,c=prop(0,1).fin.dy;if(Math.abs(a)<1e-9)return null;
+ const f=A.fin,Hp=f.x+f.dx*(1-f.y)/f.dy,h=c,sl=-a,yo=prop(h,sl).fin.y,H=E[0].x+(yo-h)/sl; // (h, sl) = (c, -a) always leaves parallel, and sl is never 0
+ return{H,Hp}}
+const ppOn=()=>$('pp').checked&&(!practice||practice.revealed); // hidden during an exercise: finding them can be the task
 function trace(r){const L=lineOf(r),e0=srt()[0];if(!L)return null;const h=L.P.y+L.s*(e0.x-L.P.x),T=prop(h,L.s);return T?{L,T,h}:null}
 const cr=(a,b,c,d)=>a*d-b*c;
 function inter(a,b){const k=cr(a.dx,a.dy,b.dx,b.dy);if(Math.abs(k)<1e-9)return null;const t=cr(b.x-a.x,b.y-a.y,b.dx,b.dy)/k;return{x:a.x+t*a.dx,y:a.y+t*a.dy}}
