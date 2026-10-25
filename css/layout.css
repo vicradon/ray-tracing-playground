@@ -1,9 +1,9 @@
 /* App layout. Phones (< 900px): header, canvas, scene list, a tool dock fixed at the bottom and the inspector as a bottom sheet.
    Wide screens: tool rail on the left, canvas in the middle, inspector and scene list docked on the right. */
 
-:root { --r: 14px; --sel: rgba(59,75,122,.10); --danger: #b3261e; --dangerbg: #fff4f3; --dangerbd: #f0c9c4; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sel: rgba(127,147,214,.18); --danger: #ff8a80; --dangerbg: #2c1a1a; --dangerbd: #5a2c2c; } }
-:root[data-theme="dark"] { --sel: rgba(127,147,214,.18); --danger: #ff8a80; --dangerbg: #2c1a1a; --dangerbd: #5a2c2c; }
+:root { --pp: #0f766e; --r: 14px; --sel: rgba(59,75,122,.10); --danger: #b3261e; --dangerbg: #fff4f3; --dangerbd: #f0c9c4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pp: #4fd1c5; --sel: rgba(127,147,214,.18); --danger: #ff8a80; --dangerbg: #2c1a1a; --dangerbd: #5a2c2c; } }
+:root[data-theme="dark"] { --pp: #4fd1c5; --sel: rgba(127,147,214,.18); --danger: #ff8a80; --dangerbg: #2c1a1a; --dangerbd: #5a2c2c; }
 
 button { touch-action: manipulation; }
 canvas { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; border-radius: var(--r); }

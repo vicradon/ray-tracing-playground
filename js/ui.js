@@ -92,7 +92,6 @@ function renderScene(){const box=$('scene');box.innerHTML='';const T=selTarget()
  if(!S.els.length&&!S.objs.length&&!S.rays.length&&!S.lines.length)box.appendChild(mk('p','muted empty','Nothing here yet. Tap + to add a lens, mirror or object, or pick a preset at the top of the canvas.'))}
 
 // ---- result chip on the canvas (draw() passes the text); also keeps the Grid switch in step with the preference
-function setRes(t){const e=$('res');e.textContent=t;e.hidden=!t;$('grid').checked=pref.grid}
 
 // ---- add sheet
 function openSheet(){if(practice){toast('Adding elements is disabled in practice mode');return}$('addSheet').classList.add('open');document.body.classList.add('sheet-open')}

@@ -1,5 +1,6 @@
 // Canvas drawing
 // ---- drawing
+function setRes(t){const e=$('res');e.textContent=t;e.hidden=!t;$('grid').checked=pref.grid} // the result chip on the canvas
 let sc=1,dpr=1;const X=x=>(x-view.x0)*sc,Y=y=>(view.y0-y)*sc;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function clipSeg(x1,y1,x2,y2){const m=20/view.z,xa=view.x0-m,xb=view.x0+W/view.z+m,yb=view.y0+m,ya=view.y0-H/view.z-m,dx=x2-x1,dy=y2-y1;let t0=0,t1=1;
@@ -37,6 +38,9 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
    for(let i=Math.ceil(vx0/st-1e-9);i*st<=vx1+1e-9;i++)if(!minor(i*st))ln(i*st,vy0,i*st,vy1,gc,1);
    for(let j=Math.ceil(vy0/st-1e-9);j*st<=vy1+1e-9;j++)if(!minor(j*st))ln(vx0,j*st,vx1,j*st,gc,1)}cx.globalAlpha=1}
  ln(vx0,0,vx1,0,ax,1.5,[8,6]);
+ const PP=ppOn()?principalPlanes():null;
+ if(PP){const pc=css('--pp');ln(PP.H,-6.5,PP.H,6.5,pc,1.4,[7,3,1.5,3]);ln(PP.Hp,-6.5,PP.Hp,6.5,pc,1.4,[7,3,1.5,3]);
+  const same=Math.abs(PP.H-PP.Hp)<.3;txo('H',PP.H,6.5,same?-.55:-.2,-.55,pc,16);txo('H′',PP.Hp,6.5,same?.12:-.2,same?-.55:-1.15,pc,16)}
  if($('fp').checked)E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t=='L')ln(e.x+e.f,-6.5,e.x+e.f,6.5,ax,1,[2,4])});
  E.forEach(e=>{const n=nm(e);
   if(e.t=='L'){ln(e.x,-6.5,e.x,6.5,fg,3);const s=e.f>0?1:-1;for(const y of[6.5,-6.5]){const d=y>0?-1:1;ln(e.x,y,e.x-.2,y+d*.45*s,fg,3);ln(e.x,y,e.x+.2,y+d*.45*s,fg,3)}
@@ -67,4 +71,4 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
    cx.save();cx.strokeStyle='#e08a00';cx.lineWidth=1.5*dpr;cx.setLineDash([]);[th,-th].forEach(t=>{const d=nm(t-a0);cx.beginPath();cx.arc(X(symG.x),Y(symG.y),34*dpr,-a0,-(a0+d),d>0);cx.stroke()});
    cx.restore()}}
  S.hnd=hnd;if(!exporting)hnd.forEach(h=>{cx.beginPath();cx.fillStyle=img;cx.globalAlpha=.35;cx.arc(X(h.x),Y(h.y),9*dpr,0,7);cx.fill();cx.globalAlpha=1});
- setRes(practice&&!practice.revealed?'':par?'Tap where the parallel ray should pass · Esc cancels':!S.els.length&&!S.objs.length?'Empty scene: tap + to add a lens, mirror or object':R.join('\n'));$('out').style.whiteSpace='pre-line';$('out').textContent=practice&&!practice.revealed?practiceMsg():par?'Parallel-ray mode: move to place the new ray (it keeps the direction of the chosen ray) and click to confirm. It snaps to O, S, F, F′, C and grid points. Esc cancels.':info||(S.rays.length?(S.rays.some(r=>r.aim.k=='guide')?'The emerging ray passes through the point where the guideline (through the centre, parallel to the incident ray) meets the focal plane.':'Rays traced.'):'Empty scene: drag a lens, mirror or object onto the canvas, then use the Trace ray tool.');commit();updTitle();updZoom()}
+ setRes(practice&&!practice.revealed?'':par?'Tap where the parallel ray should pass · Esc cancels':!S.els.length&&!S.objs.length?'Empty scene: tap + to add a lens, mirror or object':[...R,...(PP?[`H at ${f2(PP.H)} \u00b7 H\u2032 at ${f2(PP.Hp)}`]:ppOn()&&S.els.length?['Afocal system: no principal planes']:[])].join('\n'));$('out').style.whiteSpace='pre-line';$('out').textContent=practice&&!practice.revealed?practiceMsg():par?'Parallel-ray mode: move to place the new ray (it keeps the direction of the chosen ray) and click to confirm. It snaps to O, S, F, F′, C and grid points. Esc cancels.':info||(S.rays.length?(S.rays.some(r=>r.aim.k=='guide')?'The emerging ray passes through the point where the guideline (through the centre, parallel to the incident ray) meets the focal plane.':'Rays traced.'):'Empty scene: drag a lens, mirror or object onto the canvas, then use the Trace ray tool.');commit();updTitle();updZoom()}
