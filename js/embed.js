@@ -14,13 +14,14 @@ function embedFb() { // the hint and the feedback, under the canvas
   const line = (c, t) => { const d = mk('div', 'efl ' + c); d.textContent = ({ ok: '✓ ', bad: '✗ ', warn: '! ', hint: 'ℹ ' }[c] || '') + t; box.appendChild(d); };
   if (practice.hintTxt) line('hint', practice.hintTxt);
   if (practice.revealed) line('hint', 'Solution shown.');
-  (practice.fb || []).forEach(([c, t]) => line(c, t));
+  if (!document.body.classList.contains('hosted')) (practice.fb || []).forEach(([c, t]) => line(c, t)); // a host shows the result itself
   sendSize();
 }
 let sizeT = 0; const sendSize = () => { clearTimeout(sizeT); sizeT = setTimeout(() => toHost({ type: 'size', h: Math.ceil(document.querySelector('.app').getBoundingClientRect().height + 16) }), 30); };
 if (EMBED) {
   document.body.classList.add('embed'); if (parent !== window) document.body.classList.add('hosted');
   buildToolbar($('embedBar'), [{ items: ['hint', 'show', 'clear'] }]);
+  if (parent !== window) toast = () => {}; // the host says right or wrong
   const d = EX.find((e) => e.id == EMBED.ex);
   if (d) newExercise(d.id); else { document.body.classList.add('embed-missing'); $('embedFb') && ($('embedFb').textContent = 'Exercise "' + EMBED.ex + '" not found.'); }
   { const pu = pracUI; pracUI = function () { pu(); embedFb(); }; }
