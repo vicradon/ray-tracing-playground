@@ -50,7 +50,7 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
    cross(e.x,0,fg);txo('S'+n,e.x,0,-.7,-.6,fg,17);cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);cross(e.x-2*e.f,0,fg,'C'+n,-.2,-.6)}});
  const imgs=S.objs.map((_,i)=>imageOf(i));
  if($('vall').checked)S.rays.forEach(r=>{if(!r.vis)return;const tr=trace(r);if(!tr)return;if(practice&&!practice.revealed){if(practice.task=='ray'&&r.id==practice.rid){const L=tr.L,e0=srt()[0],a=incSeg(L,e0,tr.h);ln(a[0],a[1],a[2],a[3],OC,2.2);S.segs.push({id:r.id,a:[a]})}return}drawTrace(tr,rayCol(r),r.aim.k=='guide'?[6,4]:null,r.src>=0?imgs[r.src].pt:null,aimTarget(r));S.segs.push({id:r.id,a:raySegs(tr)})});
- let info='';const R=[],hnd=[],f2=v=>+v.toFixed(2);drawExtras(hnd,E,ax);
+ let info='';const R=[],hnd=[],f2=v=>+v.toFixed(2);drawExtras(hnd,E,ax);drawPupils(hnd,E);
  S.objs.forEach((o,i)=>{const n=onm(i);
   if(o.ext){arrow(o.x,0,o.y,OC);txo('A'+n,o.x,0,-.5,-.7,OC,17);txo('B'+n,o.x,o.y,-.5,.3,OC,17)}else cross(o.x,o.y,OC,'A'+n,-.15,-.7);
   if(!practice)hnd.push({k:'obj',i,x:o.x,y:o.y});

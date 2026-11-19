@@ -7,6 +7,7 @@ function freeSpot(t){const el=t[0]=='L'||t[0]=='M',c=atHome()?{x:9,y:3}:{x:view.
  for(let k=0;k<40;k++){const x=c.x+(k%2?1:-1)*Math.ceil(k/2)*2;if(!taken(sn(x)))return{x,y:c.y}}return c}
 function add(t,p){if(practice){toast('Adding elements is disabled in practice mode');return}
  p=p||freeSpot(t);const x=clx(sn(p.x));
+ if(t=='D'){S.pupil={x,r:Math.max(.5,Math.min(5,Math.abs(sn(p.y))||2)),sp:srt().filter(e=>e.x<x).length};closeSheet();sel={k:'pup',m:mode};panel();draw();return}
  if(t[0]=='L'||t[0]=='M')S.els.push({id:uid++,t:t[0],x,f:t[1]=='-'?-pref.f:pref.f});
  else S.objs.push({x,y:t=='A'?(Math.abs(p.y)<.3?3:sn(p.y)):sn(p.y),ext:t=='A'});
  closeSheet();sel={...(t[0]=='L'||t[0]=='M'?{k:'el',id:S.els[S.els.length-1].id}:{k:'obj',i:S.objs.length-1}),m:mode};panel();draw()}

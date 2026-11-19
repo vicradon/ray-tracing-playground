@@ -8,7 +8,9 @@ const CTRL={
  trace:{tool:'trace',label:'Ray',tip:'Trace ray (T): drag from an object toward the elements',icon:svg('<circle cx="5" cy="18" r="2.2"/><path d="M7 16.5L20 6M20 6h-5.5M20 6v5.5"/>')},
  line:{tool:'line',label:'Line',tip:'Bold line (L or B): solid segment from a start point to an end point. Snaps to special points, intersections, elements and directions',icon:svg('<circle cx=\"5\" cy=\"19\" r=\"2\"/><circle cx=\"19\" cy=\"5\" r=\"2\"/><path stroke-width=\"3.2\" d=\"M6.5 17.5L17.5 6.5\"/>')},
  cons:{tool:'cons',label:'Construct',tip:'Construction line (C): dotted line through two points, extending across the whole canvas. Same snapping as the bold line',icon:svg('<circle cx=\"5\" cy=\"19\" r=\"2\"/><circle cx=\"19\" cy=\"5\" r=\"2\"/><path stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-dasharray=\"0.1 3.4\" d=\"M1 23L23 1\"/>')},
+ pupil:{tool:'pupil',label:'Pupil',tip:'Place a pupil (U): tap where its upper edge goes; it is drawn symmetric about the axis',icon:svg('<path d="M12 3v4M8 7h8M12 21v-4M8 17h8"/>')},
  mark:{tool:'mark',label:'Mark',tip:'Mark answer (X)',icon:svg('<path d="M12 21s-6-6-6-11a6 6 0 0112 0c0 5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/>')},
+ D:{add:'D',tip:'Aperture stop / pupil (D)',label:'Pupil',icon:svg('<path d="M12 3v4M8 7h8M12 21v-4M8 17h8"/><path d="M3 12h18" stroke-dasharray="2 2"/>')},
  'L+':{add:'L+',tip:'Converging lens, f>0 (key 1)',label:'Converging lens',icon:svg('<path d="M12 3v18M8.5 7L12 3l3.5 4M8.5 17L12 21l3.5-4"/>')},
  'L-':{add:'L-',tip:'Diverging lens, f<0 (key 2)',label:'Diverging lens',icon:svg('<path d="M12 7v10M8.5 3.5L12 7l3.5-3.5M8.5 20.5L12 17l3.5 3.5"/>')},
  'M+':{add:'M+',tip:'Concave (converging) mirror (key 3)',label:'Concave mirror',icon:svg('<path d="M9 3l5 5v8l-5 5"/><path d="M14 9.5l3.5-3.5M14 13l3.5-3.5M14 16.5l3.5-3.5"/>')},
@@ -20,9 +22,9 @@ const CTRL={
  hint:{act:'hint',id:'pHint',text:'Hint (0/3)',run:()=>hintStep()},
  show:{act:'show',text:'Show solution',run:()=>{if(practice){if(!practice.revealed){ // the solution rays only exist once revealed
    if(practice.task=='image'){if(!S.rays.length)S.objs.forEach((_,i)=>principal(i))}
-   else if(!S.rays.some(q=>q.aim.k=='guide'))addRay(-1,{k:'guide',ref:practice.rid})}
+   else if(practice.task=='ray'&&!S.rays.some(q=>q.aim.k=='guide'))addRay(-1,{k:'guide',ref:practice.rid})}
   practice.revealed=true;pracUI();draw()}}},
- clear:{act:'clear',text:'Clear',tip:'Clear my constructions and answer',run:()=>{S.lines=[];if(practice){practice.ans=null;practice.fb=[]}panel();draw()}},
+ clear:{act:'clear',text:'Clear',tip:'Clear my constructions and answer',run:()=>{S.lines=[];if(practice){practice.ans=null;practice.pups=[];practice.fb=[]}panel();draw()}},
  next:{act:'next',text:'Next',tip:'Next exercise in this group (a random group draws a new one)',run:()=>nextExercise()},
  evaluate:{act:'eval',text:'Check',tip:'Check my construction (E)',cls:'primary',run:()=>evaluate()},
  addb:{act:'addsheet',label:'Add',cls:'addb',tip:'Add a lens, mirror, object or ray',icon:svg('<path d="M12 5v14M5 12h14"/>'),run:()=>openSheet()},
@@ -31,12 +33,12 @@ const CTRL={
  zoomin:{act:'zoomin',text:'+',tip:'Zoom in (+)',run:()=>zoomStep(1)}};
 const TOOLBARS={
  tbSand:[{items:['move','trace','line','cons']},{items:['addb']}],
- tbPrac:[{items:['move','line','cons','mark']},{items:['evaluate']}],
+ tbPrac:[{items:['move','line','cons','mark','pupil']},{items:['evaluate']}],
  hist:[{items:['undo','redo']}],
  chipSand:[{items:['preset']}],
  chipPrac:[{items:['task']}],
  pracBtns:[{items:['hint','show','clear','next']}],
- tiles:[{items:['L+','L-','M+','M-','P','A']}]};
+ tiles:[{items:['L+','L-','M+','M-','P','A','D']}]};
 function ctrl(c){
  if(c.select){const e=mk('select');e.id=c.select;const fill=(par,o)=>o.forEach(x=>{if(x.items){const g=mk('optgroup');g.label=x.label;fill(g,x.items);par.appendChild(g)}else par.appendChild(new Option(x[1],x[0]))});fill(e,c.opts||[]);if(c.tip)e.title=c.tip;if(c.change)e.onchange=c.change;return e}
  const b=mk('button',c.cls||'',(c.icon||'')+(c.label?`<small>${c.label}</small>`:'')+(c.text?`<span class="t">${c.text}</span>`:''));b.title=c.tip||c.text||'';if(c.id)b.id=c.id;

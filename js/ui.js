@@ -12,7 +12,8 @@ function selTarget(){if(!sel||sel.m!==mode)return null;
  if(sel.k=='el'){const e=elById(sel.id);return e&&!practice?{k:'el',e}:null}
  if(sel.k=='obj'){const o=S.objs[sel.i];return o&&!practice?{k:'obj',o,i:sel.i}:null}
  if(sel.k=='ray'){const r=S.rays.find(q=>q.id==sel.id);return r&&!practice?{k:'ray',r}:null}
- if(sel.k=='line'){const l=S.lines.find(q=>q.id==sel.id);return l?{k:'line',l}:null}return null}
+ if(sel.k=='line'){const l=S.lines.find(q=>q.id==sel.id);return l?{k:'line',l}:null}
+ if(sel.k=='pup')return S.pupil&&!practice?{k:'pup',p:S.pupil}:null;return null}
 
 // ---- tap (or click) with the Move tool selects what is under it; tapping empty space clears the selection.
 // Capture-phase listeners so the pinch / pan handlers, which stop propagation, cannot hide the gesture from us.
@@ -22,7 +23,7 @@ cv.addEventListener('pointermove',ev=>{if(tapS&&(ev.pointerId!=tapS.id||Math.hyp
 cv.addEventListener('pointerup',ev=>{const t=tapS;tapS=null;if(!t||ev.pointerId!=t.id||Date.now()-t.t>600||tool!='move'||par||Date.now()-lpAt<800)return;
  const p=wp(ev);setTimeout(()=>tapSelect(p),0)},{capture:true});
 function tapSelect(p){let h=hitAt(p);if(practice&&h&&h.k!='line')h=null;
- select(!h?null:h.k=='obj'?{k:'obj',i:h.i}:h.k=='el'?{k:'el',id:h.e.id}:h.k=='ray'?{k:'ray',id:h.r.id}:{k:'line',id:h.l.id})}
+ select(!h?null:h.k=='pup'?{k:'pup'}:h.k=='obj'?{k:'obj',i:h.i}:h.k=='el'?{k:'el',id:h.e.id}:h.k=='ray'?{k:'ray',id:h.r.id}:{k:'line',id:h.l.id})}
 
 // ---- small builders
 const icon=k=>(CTRL[k]&&CTRL[k].icon)||'';
@@ -64,6 +65,12 @@ function renderInsp(){const box=$('insp'),T=selTarget();box.innerHTML='';box.cla
   srt().forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(p=>ch.appendChild(B('through '+ptName(e,p),act(()=>addRay(i,{k:'pt',el:e.id,p})),'chipb'))));
   if(!S.els.length)ch.appendChild(mk('span','muted','(add a lens or mirror to trace rays)'));
   add(ch,B('Delete object',act(()=>{delObj(i);sel=null}),'danger'))}
+ else if(T.k=='pup'){const p=T.p,E=srt(),n=E.length,P=pupilSpaces();
+  add(head(icon('D'),'Pupil',PUPC),
+   stepper('Position <i>x</i>',()=>p.x,pref.step,v=>{p.x=clx(v)}),stepper('Diameter <i>D</i>',()=>2*Math.abs(p.r),pref.step,v=>{p.r=v/2},.25));
+  if(n){const opts=[];for(let j=0;j<=n;j++)opts.push([j,j==0?'Entry':j==n?'Exit':n==2?'Intermediate':'After '+j]);add(sec('This pupil is the'),segc('Pupil space',opts,Math.min(n,p.sp|0),v=>{p.sp=+v;panel();draw()}))}
+  const m=mk('p','muted');m.textContent=P?P.map((q,j)=>q?pupilName(j,n)+': x '+f2(q.x)+', D '+f2(2*Math.abs(q.r)):pupilName(j,n)+': at infinity').join(' \u00b7 '):(E.some(e=>e.t=='M')?'Pupils are computed for lens systems only.':'Add lenses to see its images.');
+  add(m,mk('p','muted','Drag its upper edge on the canvas: sideways to move it, up and down to resize it.'),B('Delete pupil',act(()=>{S.pupil=null;sel=null}),'danger'))}
  else if(T.k=='ray'){const r=T.r,src=r.src>=0?(S.objs[r.src].ext?'B':'A')+onm(r.src):null,g=r.aim.k=='guide';
   add(head(icon('trace'),g?'Guideline':src?'Ray from '+src:'Free ray',rayCol(r)));const p=mk('p');p.textContent=rayDesc(r).replace(/^[^:]+: /,'');add(p);
   const row=mk('div','btns');row.append(B(r.vis?'Hide ray':'Show ray',act(()=>{r.vis=!r.vis})));
@@ -81,13 +88,14 @@ function renderInsp(){const box=$('insp'),T=selTarget();box.innerHTML='';box.cla
   add(sec('Colour'),sw,p,row,B('Delete line',act(()=>{delLine(l);sel=null}),'danger'))}}
 
 // ---- scene list (sandbox): every element, object, free ray and line, one tappable row each
-function renderScene(){const box=$('scene');box.innerHTML='';const T=selTarget(),cur=T&&(T.e||T.o||T.r||T.l);
+function renderScene(){const box=$('scene');box.innerHTML='';const T=selTarget(),cur=T&&(T.e||T.o||T.r||T.l||T.p);
  const h=mk('div','sh');h.append(mk('h2',null,'Scene'),mk('span','muted',S.els.length+S.objs.length+S.lines.length?'Tap to edit':''));box.appendChild(h);
  const row=(ic,col,name,meta,s,on)=>{const b=B('',()=>select(s),'srow'+(on?' on':''));const i=mk('span','ic',ic);if(col)i.style.color=col;
   const n=mk('span','nm');n.textContent=name;const m=mk('span','meta');m.textContent=meta;b.append(i,n,m,mk('span','chev','›'));b.setAttribute('aria-pressed',!!on);box.appendChild(b)};
  srt().forEach(e=>row(icon(elKey(e)),null,kindName(e)+(S.els.length>1?' '+(S.els.indexOf(e)+1):''),`x ${f2(e.x)} · f ${f2(e.f)}`,{k:'el',id:e.id},cur===e));
  S.objs.forEach((o,i)=>row(icon(o.ext?'A':'P'),OC,'Object '+(o.ext?'AB':'A')+onm(i),`(${f2(o.x)}, ${f2(o.y)}) · ${plural(S.rays.filter(r=>r.src==i).length,'ray')}`,{k:'obj',i},cur===o));
  S.rays.filter(r=>r.src<0).forEach(r=>row(icon('trace'),rayCol(r),r.aim.k=='guide'?'Guideline':'Free ray',rayDesc(r).replace(/^[^:]+: /,''),{k:'ray',id:r.id},cur===r));
+ if(S.pupil)row(icon('D'),PUPC,'Pupil',`x ${f2(S.pupil.x)} \u00b7 D ${f2(2*Math.abs(S.pupil.r))}`,{k:'pup'},cur===S.pupil);
  S.lines.forEach((l,i)=>row(lineIcon(l),l.c||LC,(l.k=='bold'?'Line ':'Construction line ')+(i+1)+(l.vis?'':' (hidden)'),'',{k:'line',id:l.id},cur===l));
  if(!S.els.length&&!S.objs.length&&!S.rays.length&&!S.lines.length)box.appendChild(mk('p','muted empty','Nothing here yet. Tap + to add a lens, mirror or object, or pick a preset at the top of the canvas.'))}
 

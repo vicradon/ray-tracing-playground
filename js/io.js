@@ -19,7 +19,7 @@ function saveDlg(asNew){if(!sandboxOnly('Saving'))return;const inp=document.crea
  modal(asNew?'Save as':'Save configuration',d,[{l:'Save',p:1,f:()=>doSave(inp.value.trim()||'Untitled',asNew||!curId)},{l:'Cancel'}]);setTimeout(()=>inp.select(),0)}
 const sandboxOnly=w=>mode=='sandbox'||(toast(w+' applies to the sandbox: switch to Sandbox first'),false);
 function saveCur(){if(!sandboxOnly('Saving'))return;curId?doSave(curName,false):saveDlg(false)}
-function loadJSON(j,id,name){try{const o=JSON.parse(j);if(!Array.isArray(o.els)||!Array.isArray(o.objs)||!Array.isArray(o.rays))throw 0;if(mode!='sandbox')switchMode('sandbox');Object.assign(view,HOME);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];uid=o.uid||100}catch(e){toast('Not a valid configuration file');return}
+function loadJSON(j,id,name){try{const o=JSON.parse(j);if(!Array.isArray(o.els)||!Array.isArray(o.objs)||!Array.isArray(o.rays))throw 0;if(mode!='sandbox')switchMode('sandbox');Object.assign(view,HOME);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];S.pupil=o.pupil||null;uid=o.uid||100}catch(e){toast('Not a valid configuration file');return}
  curId=id||null;curName=name||null;savedJ=id?ser():null;pre.value='';hist.u=[];hist.r=[];hist.cur=null;hist.key=null;S.prev=null;par=null;panel();draw();updBtns()}
 function renameDlg(r){const inp=document.createElement('input');inp.style.width='100%';inp.value=r.name;const d=document.createElement('div');d.appendChild(inp);
  modal('Rename',d,[{l:'Rename',p:1,f:async()=>{const n=inp.value.trim();if(!n)return false;await DB.put({...r,name:n});if(curId==r.id)curName=n;updTitle();setTimeout(openDlg,0)}},{l:'Cancel',f:()=>{setTimeout(openDlg,0)}}])}
@@ -86,18 +86,21 @@ let lastP=null;cv.addEventListener('pointermove',e=>{lastP=wp(e)});cv.addEventLi
 function hitAt(p){if(!p)return null;
  const ho=(S.hnd||[]).filter(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)).sort((a,b)=>(a.k=='obj'?0:1)-(b.k=='obj'?0:1))[0];
  if(ho&&ho.k=='obj')return{k:'obj',i:ho.i};if(ho){const r=S.rays.find(q=>q.id==ho.id);if(r)return{k:'ray',r}}
+ if(S.pupil&&!practice&&Math.abs(S.pupil.x-p.x)<tol(.35)&&Math.abs(Math.abs(p.y)-Math.abs(S.pupil.r))<tol(.6))return{k:'pup'};
  for(const e of S.els)if(Math.abs(e.x-p.x)<tol(.4)||(Math.abs(e.x-e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8))||(e.t=='L'&&Math.abs(e.x+e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8)))return{k:'el',e};
  let best=null,bd=tol(.25);(S.segs||[]).forEach(g=>g.a.forEach(a=>{const d=dseg(p,a);if(d<bd){bd=d;best=g}}));
  if(best){const r=S.rays.find(q=>q.id==best.id);if(r)return{k:'ray',r}}const hl=S.lines.find(l=>lineHit(l,p,.25));return hl?{k:'line',l:hl}:null}
 addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||$('mdl').style.display=='flex')return;
  const k=e.key.toLowerCase(),sh=e.shiftKey,dg={Digit1:'L+',Digit2:'L-',Digit3:'M+',Digit4:'M-',Numpad1:'L+',Numpad2:'L-',Numpad3:'M+',Numpad4:'M-'}[e.code];let ok=true;
  if(zoomKey(k))return;
- if(practice&&!(['l','b','c','x','m','e','enter','escape','delete','backspace','g','s'].includes(k)||e.key=='?'))return;
+ if(practice&&!(['l','b','c','x','u','m','e','enter','escape','delete','backspace','g','s'].includes(k)||e.key=='?'))return;
  if(dg)add(dg,lastP||undefined);
  else if(k=='m')setTool('move');
  else if(k=='l'||k=='b')setTool('line');
  else if(k=='c')setTool('cons');
  else if(k=='x')setTool('mark');
+ else if(k=='u')setTool('pupil');
+ else if(k=='d'&&!practice)add('D',lastP||undefined);
  else if((k=='e'||k=='enter')&&practice)evaluate();
  else if(k=='t'){if(sh){const h=hitAt(lastP);if(h&&h.k=='ray'){startPar(h.r);draw()}else toast('Hover over a ray, then press Shift+T')}else setTool('trace')}
  else if(k=='p')add('P',lastP||undefined);

@@ -4,7 +4,7 @@ let drag=null;
 function wp(ev){const r=cv.getBoundingClientRect(),k=W/view.z/r.width;return{x:view.x0+(ev.clientX-r.left)*k,y:view.y0-(ev.clientY-r.top)*k}}
 const sn=v=>$('snap').checked?Math.round(v/pref.step)*pref.step:v;
 let tool='move',TR=null,par=null,dragN=0,LP=null;
-function setTool(t){if(practice&&t=='trace'){toast('Trace is disabled in practice mode: use the line tools');t='line'}if(t=='mark'&&!(practice&&practice.task=='image')){toast('The Mark tool is for the "find the image" practice task');t='move'}
+function setTool(t){if(practice&&t=='trace'){toast('Trace is disabled in practice mode: use the line tools');t='line'}if(t=='mark'&&!(practice&&practice.task=='image')){toast('The Mark tool is for the "find the image" practice task');t='move'}if(t=='pupil'&&!(practice&&practice.task=='pupils')){toast('The Pupil tool is for the "locate the pupils" practice task');t='move'}
  tool=t;par=null;LP=null;S.pl=null;S.snapPt=null;S.snapLbl='';document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool==t));cv.style.cursor=t=='move'?'default':'crosshair';S.prev=null;draw()}
 function parPt(p){S.snapLbl='';let best=null,bd=tol(.6);S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best=T}}));if(best){S.snapPt=best;return best}return{x:sn(p.x),y:sn(p.y)}}
 function startPar(r){par=r.id;S.prev=null;S.snapPt=null}
@@ -55,24 +55,25 @@ const endPtr=ev=>{lpCancel();tps.delete(ev.pointerId);if(tps.size<2)pinch=null;i
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 addEventListener('keydown',e=>{if(e.code=='Space'&&!/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)&&$('mdl').style.display!='flex'){spaceDown=true;curs();e.preventDefault()}});
 addEventListener('keyup',e=>{if(e.code=='Space'){spaceDown=false;curs()}});addEventListener('blur',()=>{spaceDown=false;curs()});
-const ptTool=()=>(tool=='line'||tool=='cons'||(tool=='mark'&&practice&&practice.task=='image'))&&!par;
+const ptTool=()=>(tool=='line'||tool=='cons'||(tool=='mark'&&practice&&practice.task=='image')||(tool=='pupil'&&practice&&practice.task=='pupils'))&&!par;
 function placePt(q){ // q is an already snapped point: start/finish a line, or place the answer marker
  if(tool=='mark'){practice.ans=q;S.pl=null}
+ else if(tool=='pupil'){(practice.pups=practice.pups||[]).push({x:q.x,r:Math.max(.1,Math.abs(q.y))});S.pl=null}
  else{if(!LP)LP=q;else{if(Math.hypot(q.x-LP.x,q.y-LP.y)>1e-6)S.lines.push({id:uid++,a:LP,b:q,vis:true,k:tool=='cons'?'cons':'bold'});LP=null}S.pl=q}
  panel();draw()}
 cv.onpointerdown=ev=>{if(ev.button!==0)return;const p=wp(ev);let best=null,bd=1e9;
  // touch: the finger hides the point, so press, slide to the snap you want (shown live) and place it on release
- if(ev.pointerType=='touch'&&ptTool()){drag={k:'tp'};cv.setPointerCapture(ev.pointerId);S.pl=snapAt(p,tool=='mark'?null:LP);draw();return}
+ if(ev.pointerType=='touch'&&ptTool()){drag={k:'tp'};cv.setPointerCapture(ev.pointerId);S.pl=snapAt(p,tool=='mark'||tool=='pupil'?null:LP);draw();return}
  if((tool=='line'||tool=='cons')&&!par){placePt(snapAt(p,LP));return}
- if(tool=='mark'){if(ptTool())placePt(snapAt(p));return}
+ if(tool=='mark'||tool=='pupil'){if(ptTool())placePt(snapAt(p));return}
  if(par){const q=parPt(p);addRay(-1,{k:'dir',ref:par,x:q.x,y:q.y});par=null;S.prev=null;S.snapPt=null;panel();draw();return}
  if(tool=='trace'){let src=-1;S.objs.forEach((q,i)=>{const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;src=i}});TR={src,y0:sn(p.y),p0:p};drag={k:'T'};cv.setPointerCapture(ev.pointerId);return}
  (S.hnd||[]).forEach(h=>{const d=Math.hypot(h.x-p.x,h.y-p.y);if(d<tol(.6)&&d<bd){bd=d;best=h}});
  if(best){drag=best}else if(!practice)S.els.forEach((e,i)=>{if(Math.abs(e.x-e.f-p.x)<tol(.4)&&Math.abs(p.y)<tol(.8)&&!best)best=drag={k:'F',i};else if(Math.abs(e.x-p.x)<tol(.35)&&!best)best=drag={k:'E',i}});
  if(best){drag=best;dragN++;cv.setPointerCapture(ev.pointerId)}
  else if(ev.pointerType=='touch'&&tool=='move'){panD={x:ev.clientX,y:ev.clientY};cv.setPointerCapture(ev.pointerId)}}; // one finger on empty space pans
-cv.onpointermove=ev=>{if(drag&&drag.k=='tp'){S.pl=snapAt(wp(ev),tool=='mark'?null:LP);draw();return}
- if(!drag){if((tool=='line'||tool=='cons'||tool=='mark')&&!par){S.snapPt=null;S.snapLbl='';S.pl=snapAt(wp(ev),tool=='mark'?null:LP);draw();return}if(par){S.snapPt=null;const q=parPt(wp(ev));S.prev={id:-1,src:-1,aim:{k:'dir',ref:par,x:q.x,y:q.y},y0:0,vis:true};draw()}return}const p=wp(ev),e=S.els[drag.i],r=S.rays.find(q=>q.id==drag.id);
+cv.onpointermove=ev=>{if(drag&&drag.k=='tp'){S.pl=snapAt(wp(ev),tool=='mark'||tool=='pupil'?null:LP);draw();return}
+ if(!drag){if((tool=='line'||tool=='cons'||tool=='mark'||tool=='pupil')&&!par){S.snapPt=null;S.snapLbl='';S.pl=snapAt(wp(ev),tool=='mark'||tool=='pupil'?null:LP);draw();return}if(par){S.snapPt=null;const q=parPt(wp(ev));S.prev={id:-1,src:-1,aim:{k:'dir',ref:par,x:q.x,y:q.y},y0:0,vis:true};draw()}return}const p=wp(ev),e=S.els[drag.i],r=S.rays.find(q=>q.id==drag.id);
  if(drag.k=='lp'){const l=S.lines.find(q=>q.id==drag.id);if(l){const q=snapAt(p,drag.end=='a'?l.b:l.a,l.id);l[drag.end]={x:q.x,y:q.y}}draw();return}
  if(drag.k=='ans'){practice.ans=snapAt(p);draw();return}
  if(drag.k=='T'){S.snapPt=null;const aim=aimFrom(p,TR.src);S.prev=aim?{id:-1,src:TR.src,aim,y0:TR.y0,vis:true}:null;draw();return}
@@ -83,4 +84,4 @@ cv.onpointermove=ev=>{if(drag&&drag.k=='tp'){S.pl=snapAt(wp(ev),tool=='mark'?nul
  else if(drag.k=='rh'&&r)r.aim.h=sn(Math.max(-6.5,Math.min(6.5,p.y)));
  else if(drag.k=='rs'&&r){const E0=srt()[0],h=r.aim.h,sl=(h-p.y)/(E0.x-.25);r.y0=p.y-sl*.25}
  draw()};
-cv.onpointerup=ev=>{if(!drag)return;if(drag.k=='tp'){drag=null;const q=S.pl||snapAt(wp(ev),tool=='mark'?null:LP);if(tool!='mark')S.snapPt=null;placePt(q);return}if(drag.k=='T'){const p=wp(ev);if(S.prev&&Math.hypot(p.x-TR.p0.x,p.y-TR.p0.y)>tol(.3)){const r=addRay(S.prev.src,S.prev.aim);r.y0=TR.y0}S.prev=null;S.snapPt=null}drag=null;panel();draw()};
+cv.onpointerup=ev=>{if(!drag)return;if(drag.k=='tp'){drag=null;const q=S.pl||snapAt(wp(ev),tool=='mark'||tool=='pupil'?null:LP);if(tool!='mark')S.snapPt=null;placePt(q);return}if(drag.k=='T'){const p=wp(ev);if(S.prev&&Math.hypot(p.x-TR.p0.x,p.y-TR.p0.y)>tol(.3)){const r=addRay(S.prev.src,S.prev.aim);r.y0=TR.y0}S.prev=null;S.snapPt=null}drag=null;panel();draw()};

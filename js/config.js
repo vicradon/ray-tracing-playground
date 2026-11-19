@@ -25,10 +25,12 @@ const EX=[
  {id:'sys-d',grp:'sys-image',task:'image',title:'d) Two diverging lenses',els:[['L',8,-7],['L',13,-6]],obj:[2,3],ext:true},
  {id:'sys-e',grp:'sys-image',task:'image',title:'e) Converging lens and concave mirror',els:[['L',6,6],['M',17,4]],obj:[15,3],ext:true},
  {id:'sys-f',grp:'sys-image',task:'image',title:'f) Converging lens and convex mirror',els:[['L',9,5],['M',12,-3]],obj:[1,3],ext:true,view:{z:.65,x0:-9,y0:10.77}},
+ {id:'pup-a',grp:'pupils',task:'pupils',title:'a) Intermediate pupil given: find the entry and exit pupils',els:[['L',4,3],['L',12,-4]],pupil:[6,1,1]},
+ {id:'pup-b',grp:'pupils',task:'pupils',title:'b) Entry pupil given: find the intermediate and exit pupils',els:[['L',5,4],['L',12,3.5]],pupil:[3,1.2,0]},
  {id:'sys-ray-a',grp:'sys-ray',task:'ray',title:'Two converging lenses: oblique ray',els:[['L',5,3],['L',13,3]],ray:[2,-1]},
  {id:'sys-ray-b',grp:'sys-ray',task:'ray',title:'Converging then diverging lens: oblique ray',els:[['L',5,3],['L',12,-3]],ray:[2,-1]},
  {id:'sys-ray-c',grp:'sys-ray',task:'ray',title:'Converging lens and concave mirror: ray from the left',els:[['L',5,3],['M',15,4]],ray:[2,0]}];
-const EXGROUPS=[['image','Find the image'],['ray','Find the emerging ray'],['sys-image','Systems: find the image of AB'],['sys-ray','Systems: find the emerging ray']];
+const EXGROUPS=[['image','Find the image'],['ray','Find the emerging ray'],['sys-image','Systems: find the image of AB'],['sys-ray','Systems: find the emerging ray'],['pupils','Systems: locate the pupils']];
 const EXOPTS=EXGROUPS.map(([k,label])=>({label,items:[...EX.filter(e=>(e.grp||e.task)==k).map(e=>[e.id,e.title]),...(k=='image'||k=='ray'?[['rand-'+k,'Random exercise']]:[])]}));
 const exTitle=id=>(EX.find(e=>e.id==id)||{title:'Random exercise'}).title;
 function randomDef(task){const K=[['L',1],['L',-1],['M',1],['M',-1]],[t,sg]=K[Math.floor(Math.random()*4)],f=sg*(3+Math.floor(Math.random()*3)),ex=8+Math.floor(Math.random()*3),d={task,rand:true,el:[t,ex,f]};
