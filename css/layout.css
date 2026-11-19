@@ -251,3 +251,14 @@ body.embed .tb button { width: 52px; height: 50px; }
 
 .fbox { margin: 6px 0; font-size: 14px; } .fbox input { width: 80px; padding: 5px 8px; border: 1px solid var(--bd); border-radius: 8px; font: inherit; }
 body.embed .ebar .fbox { margin: 0 8px 0 0; display: flex; align-items: center; }
+
+/* embed: the tools sit in the flow above the canvas (not fixed), so the reported height is the whole page and a
+   short frame never switches to the phone-landscape rail */
+body.embed .app { display: flex !important; flex-direction: column; padding: 4px !important; max-width: none; }
+body.embed .dock { position: static !important; order: -1; margin: 0 0 6px; top: auto; bottom: auto; left: auto; right: auto; display: block; box-shadow: none; border-radius: 14px; padding: 2px 4px; }
+body.embed .tb, body.embed .tb .grp { flex-direction: row !important; }
+body.embed .tb .grp:first-of-type { flex: 1; justify-content: flex-start; gap: 2px; }
+body.embed .tb button { width: 50px; height: 46px; }
+body.embed .tb .sep { display: none; }
+body.embed .cvw { max-width: none !important; margin: 0; }
+body.embed .stage { width: 100%; }
