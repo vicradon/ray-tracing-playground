@@ -227,3 +227,24 @@ details.help[open] > summary { margin-bottom: 4px; }
 }
 .sheet.dragging { background: transparent; pointer-events: none; }
 .sheet.dragging .sc { opacity: 0; }
+
+/* ---------- embed mode (?embed=1&ex=...): one exercise, no chrome ---------- */
+.ebar, #embedFb { display: none; }
+body.embed .hdr, body.embed .side, body.embed #chipPrac, body.embed #chipSand, body.embed #layersBtn, body.embed #res { display: none !important; }
+body.embed .app { padding: 4px 4px calc(80px + env(safe-area-inset-bottom, 0px)); }
+body.embed .cvw { padding-top: 0; }
+body.embed.practice canvas { border: 1px solid var(--bd); }
+body.embed .tb .dis { display: none; }
+body.embed.hosted [data-act=eval] { display: none; }
+body.embed .ebar { display: flex; gap: 6px; margin-top: 6px; }
+body.embed .ebar .grp { display: flex; gap: 6px; }
+body.embed .ebar button { border: 1px solid var(--bd); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+body.embed #embedFb { display: block; margin-top: 6px; font-size: 13px; line-height: 1.4; }
+#embedFb .efl { margin: 2px 0; }
+#embedFb .ok { color: #2a9d4a; } #embedFb .bad { color: #e04b4b; } #embedFb .warn { color: #c98a00; }
+body.embed .dock { left: 4px; right: 4px; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); padding: 4px; }
+body.embed .tb button { width: 52px; height: 50px; }
+@media (min-width: 900px) {
+  body.embed .app { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "dock stage"; padding: 4px; gap: 8px; max-width: none; }
+  body.embed .dock { top: 4px; }
+}
