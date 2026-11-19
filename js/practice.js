@@ -4,8 +4,12 @@ function principalList(oi){const e=srt()[0],o=S.objs[oi],R=[];if(!e||!o)return R
  if(Math.abs(o.y)>1e-6){R.push({src:oi,aim:{k:'par'}},{src:oi,aim:{k:'pt',el:e.id,p:'O'}},{src:oi,aim:{k:'pt',el:e.id,p:'F'}});if(e.t=='M')R.push({src:oi,aim:{k:'pt',el:e.id,p:'C'}})}
  else R.push({src:oi,aim:{k:'hit',h:2.5}},{src:oi,aim:{k:'hit',h:-1.5}});return R.map((r,i)=>({id:-100-i,y0:0,vis:true,...r}))}
 function trueImage(oi){const R=principalList(oi).map(r=>({r,tr:trace(r)})).filter(o=>o.tr);for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const k=inter(R[i].tr.T.fin,R[j].tr.T.fin);if(k)return{pt:k,R}}return{pt:null,R}}
-function buildExercise(d){S.els=(d.els||[d.el]).map((e,i)=>({id:i+1,t:e[0],x:e[1],f:e[2]}));uid=S.els.length+1;S.objs=[];S.rays=[];S.lines=[];if(d.view)Object.assign(view,d.view);
- if(d.obj)S.objs.push({x:d.obj[0],y:d.obj[1],ext:!!d.ext});else{const r=addRay(-1,{k:'hit',h:d.ray[0]});r.y0=d.ray[1]}
+// an exercise's scene: elements [type, x, f, options] (options: m = the points shown, xp = H′ of a thick system, surf = its drawn surfaces),
+// given lines (the exam's guideline rays: [x1, y1, x2, y2], drawn dashed in green), the canvas height h and the view
+function exScene(d){S.els=(d.els||[d.el]).map((e,i)=>({id:i+1,t:e[0],x:e[1],f:e[2],...(e[3]||{})}));uid=S.els.length+1;S.objs=[];S.rays=[];S.lines=[];S.given=(d.given||[]).map(g=>({a:{x:g[0],y:g[1]},b:{x:g[2],y:g[3]}}));
+ H=d.h||14;Object.assign(HOME,HOME0,d.view||{y0:H/2});Object.assign(view,HOME)}
+function buildExercise(d){exScene(d);
+ if(d.obj)S.objs.push({x:d.obj[0],y:d.obj[1],ext:!!d.ext});else if(d.ray){const r=addRay(-1,{k:'hit',h:d.ray[0]});r.y0=d.ray[1]}
  pre.value='';panel();draw()}
 function startPractice(task,ex){if(!S.els.length){toast('Add at least one lens or mirror first');return}let rid=null;
  if(task=='image'){if(!S.objs.length){toast('Add an object first');return}}else{const r=S.rays.find(q=>q.src<0&&q.aim.k=='hit');if(!r){toast('Add a free incident ray first (New ray from "free ray"), or use Random exercise');return}rid=r.id}
@@ -33,13 +37,13 @@ function evalImage(){const o=S.objs[0],e0=srt()[0],im=trueImage(0);if(!im.pt)ret
  fb.push([sup>=2?'ok':'warn',`${sup} complete ray${sup==1?'':'s'} support the image (at least 2 needed).`]);
  const ok=posOK&&sup>=2;fb.unshift([ok?'ok':posOK?'warn':'bad',ok?'Correct: your construction finds the image.':posOK?'Position correct, but the construction is incomplete.':'Not correct yet.']);return{ok,fb}}
 function evalRay(){const r=S.rays.find(q=>q.id==practice.rid),tr=r&&trace(r);if(!tr)return{ok:false,fb:[['warn','The incident ray is not valid.']]};
- const T=tr.T,L=tr.L,P=T.pts,n=P.length,E=srt(),e0=E[0],fb=[],ls=S.lines.filter(l=>l.vis),nrm=v=>{const m=Math.hypot(v.x,v.y)||1;return{x:v.x/m,y:v.y/m}};
+ const T=tr.T,L=tr.L,P=T.pts.filter(q=>!q.skip),n=P.length,E=srt(),e0=E[0],fb=[],ls=S.lines.filter(l=>l.vis),nrm=v=>{const m=Math.hypot(v.x,v.y)||1;return{x:v.x/m,y:v.y/m}};
  // one stage per element hit: the ray leaving element k must be drawn by the student, starting at the point where it meets that element
  const st=P.map((p,k)=>({p,d:nrm(k<n-1?{x:P[k+1].x-p.x,y:P[k+1].y-p.y}:{x:T.fin.dx,y:T.fin.dy}),prev:k?nrm({x:p.x-P[k-1].x,y:p.y-P[k-1].y}):nrm({x:1,y:L.s})}));
  const dl=(q,p,d)=>Math.abs((q.x-p.x)*d.y-(q.y-p.y)*d.x);
  const stageFound=g=>ls.find(l=>dl(l.a,g.p,g.d)<.25&&dl(l.b,g.p,g.d)<.25&&(Math.abs(g.d.x*g.prev.y-g.d.y*g.prev.x)<.02||!(dl(l.a,g.p,g.prev)<.15&&dl(l.b,g.p,g.prev)<.15)));
  // guideline for the first element: lens -> through O; mirror -> through S, or through C (a ray aimed at C reflects back on itself)
- const gp=[{x:e0.x,y:0}];if(e0.t=='M')gp.push({x:e0.x-2*e0.f,y:0});
+ const gp=[{x:e0.x,y:0}];if(e0.t=='T')gp.push({x:e0.xp,y:0});if(e0.t=='M')gp.push({x:e0.x-2*e0.f,y:0});
  const guide=ls.some(l=>{const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y;return Math.abs(dx)>1e-9&&Math.abs(dy/dx-L.s)<.06&&gp.some(c=>dLine(c,l)<.25)});
  const gtxt=e0.t=='M'?'a line parallel to the incident ray through C (or through the vertex S)':'a line through the centre O parallel to the incident ray';
  fb.push([guide?'ok':'warn',guide?'Guideline found: '+gtxt+'.':'No guideline yet ('+gtxt+').']);
@@ -56,8 +60,8 @@ function hintStep(){if(!practice)return;practice.hint=Math.min(3,practice.hint+1
  const multi=S.els.length>1,mir=S.els[0]&&S.els[0].t=='M';
  practice.hintTxt=practice.task=='image'?[multi?'Work element by element. Draw two principal rays from B through the first element (parallel to the axis, through its centre O or vertex S, or through its F). Then treat each emerging ray as the incident ray of the next element: draw a guideline through that element\u2019s centre parallel to the ray and use its focal plane. The images are where the last emerging rays meet.':'Use two or three principal rays from the object: parallel to the axis, through the centre (O or vertex S), and through F (through C for a mirror). Where their emerging rays meet is the image.','One principal ray is now shown faintly. Draw it yourself with the construction line tool, then continue with another one.','All principal rays are shown faintly. Reproduce at least two with construction lines and mark where they meet.'][h]:[(mir?'Draw a guideline parallel to the incident ray, through C (it reflects back on itself) or through the vertex S (reflect it with the axis as the mirror line). The emerging ray goes through the point where the reflected guideline meets the focal plane F.':'Draw the guideline: a line through the centre O parallel to the incident ray. The emerging ray goes through the point where the guideline meets the focal plane F\u2032.')+(multi?' Repeat for each following element, using your own emerging ray as its incident ray.':''),'The guideline and the focal planes are now shown faintly.','The emerging ray is now shown faintly.'][h];pracUI();draw()}
 // ---- workspaces: sandbox and practice each own their scene, history, view, tool and display options
-const wsSave=()=>({S,uid,hist:{...hist},view:{...view},tool,practice,curId,curName,savedJ,pre:pre.value,chk:{vall:$('vall').checked,fp:$('fp').checked,pl:$('pl').checked,pp:$('pp').checked}});
-function wsLoad(w){drag=null;S=w.S;uid=w.uid;Object.assign(hist,w.hist);Object.assign(view,w.view);practice=w.practice;curId=w.curId;curName=w.curName;savedJ=w.savedJ;pre.value=w.pre;
+const wsSave=()=>({S,uid,H,home:{...HOME},hist:{...hist},view:{...view},tool,practice,curId,curName,savedJ,pre:pre.value,chk:{vall:$('vall').checked,fp:$('fp').checked,pl:$('pl').checked,pp:$('pp').checked}});
+function wsLoad(w){drag=null;S=w.S;uid=w.uid;H=w.H||14;Object.assign(HOME,w.home||HOME0);Object.assign(hist,w.hist);Object.assign(view,w.view);practice=w.practice;curId=w.curId;curName=w.curName;savedJ=w.savedJ;pre.value=w.pre;
  $('vall').checked=w.chk.vall;$('fp').checked=w.chk.fp;$('pl').checked=w.chk.pl;$('pp').checked=!!w.chk.pp;LP=null;par=null;TR=null;S.prev=null;S.snapPt=null;S.pl=null;setTool(w.tool);panel();updBtns()}
 function switchMode(m){if(m==mode)return;
  if(m=='practice'&&!WS.practice){newExercise();return}

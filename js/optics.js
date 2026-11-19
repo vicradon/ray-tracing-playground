@@ -21,7 +21,7 @@ const P={
 "Empty sandbox":{o:[],e:[]}};
 const pre=$('pre');Object.keys(P).forEach(k=>pre.add(new Option(k,k)));
 const srt=()=>S.els.slice().sort((a,b)=>a.x-b.x),elById=id=>S.els.find(e=>e.id==id);
-function load(k){if(mode!='sandbox')switchMode('sandbox');const p=P[k];Object.assign(view,HOME);LP=null;curId=null;curName=null;savedJ=null;uid=1;S={els:(p.e||[]).map(a=>({id:uid++,t:a[0],x:a[1],f:a[2]})),objs:(p.o||[]).map(a=>({x:a[0],y:a[1],ext:!!a[2]})),rays:[],lines:[]};
+function load(k){if(mode!='sandbox')switchMode('sandbox');const p=P[k];H=14;Object.assign(HOME,HOME0);Object.assign(view,HOME);S.given=[];LP=null;curId=null;curName=null;savedJ=null;uid=1;S={els:(p.e||[]).map(a=>({id:uid++,t:a[0],x:a[1],f:a[2]})),objs:(p.o||[]).map(a=>({x:a[0],y:a[1],ext:!!a[2]})),rays:[],lines:[]};
  S.objs.forEach((_,i)=>principal(i));
  if(p.free){const r=addRay(-1,{k:'hit',h:p.free[1]});r.y0=p.free[0];addRay(-1,{k:'guide',ref:r.id})}
  $('fp').checked=!!p.free;panel();draw()}
@@ -31,7 +31,9 @@ function addRay(src,aim){const r={id:uid++,src,aim,y0:5,vis:true};S.rays.push(r)
 function principal(oi){const e=srt()[0],o=S.objs[oi];if(!e)return;
  if(Math.abs(o.y)>1e-6){addRay(oi,{k:'par'});addRay(oi,{k:'pt',el:e.id,p:'O'});addRay(oi,{k:'pt',el:e.id,p:'F'});if(e.t=='M')addRay(oi,{k:'pt',el:e.id,p:'C'})}
  else{addRay(oi,{k:'hit',h:2.5});addRay(oi,{k:'hit',h:-1.5})}}
-const ptOf=(e,p)=>({x:p=='F'?e.x-e.f:p=='Fp'?e.x+e.f:p=='C'?e.x-2*e.f:e.x,y:0});
+const ptOf=(e,p)=>({x:p=='F'?e.x-e.f:p=='Fp'?(e.t=='T'?e.xp:e.x)+e.f:p=='C'?e.x-2*e.f:p=='Hp'?e.xp:e.x,y:0});
+// the points an element shows (and snaps to): all of them, or only those an exercise lists in e.m (as on the exam sheet)
+const ptsOf=e=>(e.t=='L'?['O','F','Fp']:e.t=='T'?['H','Hp','F','Fp']:['O','F','C']).filter(k=>!e.m||e.m.includes(k));
 function lineOf(r){const e0=srt()[0];if(!e0)return null;
  if(r.aim.k=='guide'){const g=S.rays.find(q=>q.id==r.aim.ref),L=g&&lineOf(g);return L?{P:{x:e0.x,y:0},s:L.s,guide:1}:null}
  if(r.aim.k=='dir'){const g=S.rays.find(q=>q.id==r.aim.ref),L=g&&lineOf(g);return L?{P:{x:0,y:r.aim.y-L.s*r.aim.x},s:L.s,free:1}:null}
@@ -41,10 +43,11 @@ function lineOf(r){const e0=srt()[0];if(!e0)return null;
  else if(a.k=='at'){if(Math.abs(a.x-Q.x)<1e-6)return null;s=(a.y-Q.y)/(a.x-Q.x)}
  else{if(Math.abs(e0.x-Q.x)<1e-6)return null;s=(a.h-Q.y)/(e0.x-Q.x)}
  return{P:Q,s,free:r.src<0}}
+// a thick system (t 'T') is given by its principal planes: the ray meets H (e.x), leaves H′ (e.xp) at the same height
 function prop(h,q){const E=srt();if(!E.length)return null;let i=0,dir=1,pts=[];
- for(let n=0;n<10;n++){const e=E[i];pts.push({x:e.x,y:h});q-=h/e.f;if(e.t=='M')dir=-dir;
-  let nx=null;for(const c of E){if((c.x-e.x)*dir>1e-9&&(dir>0||c.t=='L')&&(nx==null||Math.abs(c.x-e.x)<Math.abs(nx.x-e.x)))nx=c}
-  if(!nx)break;h+=q*Math.abs(nx.x-e.x);i=E.indexOf(nx)}
+ for(let n=0;n<10;n++){const e=E[i];pts.push({x:e.x,y:h,skip:e.t=='T'});const ex=e.t=='T'?e.xp:e.x;if(e.t=='T')pts.push({x:ex,y:h});q-=h/e.f;if(e.t=='M')dir=-dir;
+  let nx=null;for(const c of E){if(c!==e&&(c.x-ex)*dir>1e-9&&(dir>0||c.t!='M')&&(nx==null||Math.abs(c.x-ex)<Math.abs(nx.x-ex)))nx=c}
+  if(!nx)break;h+=q*Math.abs(nx.x-ex);i=E.indexOf(nx)}
  const l=pts[pts.length-1];return{pts,fin:{x:l.x,y:l.y,dx:dir,dy:q}}}
 // Principal planes of the whole system. The tracer is linear in (h, slope), so two traces give everything:
 // H′ is where a ray entering parallel to the axis at height 1 reaches height 1 again after the last element;
@@ -59,9 +62,9 @@ const cr=(a,b,c,d)=>a*d-b*c;
 function inter(a,b){const k=cr(a.dx,a.dy,b.dx,b.dy);if(Math.abs(k)<1e-9)return null;const t=cr(b.x-a.x,b.y-a.y,b.dx,b.dy)/k;return{x:a.x+t*a.dx,y:a.y+t*a.dy}}
 function imageOf(oi){const R=S.rays.filter(r=>r.src==oi&&r.aim.k!='guide').map(r=>({r,tr:trace(r)})).filter(o=>o.tr);
  for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const k=inter(R[i].tr.T.fin,R[j].tr.T.fin);if(k)return{pt:k,R}}return{pt:null,R}}
-const kindName=e=>e.t=='L'?(e.f>0?'Converging lens':'Diverging lens'):(e.f>0?'Concave mirror':'Convex mirror');
+const kindName=e=>e.t=='T'?'Thick lens':e.t=='L'?(e.f>0?'Converging lens':'Diverging lens'):(e.f>0?'Concave mirror':'Convex mirror');
 const nm=e=>S.els.length>1?S.els.indexOf(e)+1:'',onm=i=>S.objs.length>1?i+1:'';
-function ptName(e,p){const n=nm(e);return p=='O'?(e.t=='L'?'O':'S')+n:p=='F'?'F'+n:p=='Fp'?"F′"+n:'C'+n}
+function ptName(e,p){const n=nm(e);return p=='H'?'H'+n:p=='Hp'?'H′'+n:p=='O'?(e.t=='L'?'O':'S')+n:p=='F'?'F'+n:p=='Fp'?"F′"+n:'C'+n}
 function rayCol(r){return r.aim.k=='pt'?(r.aim.p=='O'?COL.O:COL[r.aim.p]):COL[r.aim.k]}
 function rayDesc(r){const a=r.aim,s=r.src>=0?(S.objs[r.src]&&S.objs[r.src].ext?'B':'A')+onm(r.src)+': ':'free ray: ';
  if(a.k=='par')return s+'parallel to axis';if(a.k=='at')return s+'through ('+a.x+', '+a.y+')';if(a.k=='dir')return 'parallel to ray '+(S.rays.findIndex(q=>q.id==a.ref)+1)+', through ('+a.x+', '+a.y+')';if(a.k=='hit')return s+'free aim (drag handle)';

@@ -5,10 +5,10 @@ function lineMenu(id){const l=S.lines.find(q=>q.id==id);if(!l)return null;const 
 function sInter(a,b){const r=[a[2]-a[0],a[3]-a[1]],q=[b[2]-b[0],b[3]-b[1]],d=r[0]*q[1]-r[1]*q[0];if(Math.abs(d)<1e-9)return null;const t=((b[0]-a[0])*q[1]-(b[1]-a[1])*q[0])/d,u=((b[0]-a[0])*r[1]-(b[1]-a[1])*r[0])/d;return t>=0&&t<=1&&u>=0&&u<=1?{x:a[0]+t*r[0],y:a[1]+t*r[1]}:null}
 const rnd4=v=>Math.round(v*1e4)/1e4;
 const rayVis=r=>r.vis&&$('vall').checked&&(!practice||practice.revealed||(practice.task=='ray'&&r.id==practice.rid)); // rays the student can see (in practice: only the given ray until the solution is shown)
-function specialPts(skip){const a=[];S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>a.push({...ptOf(e,k),lbl:ptName(e,k)})));
+function specialPts(skip){const a=[];S.els.forEach(e=>ptsOf(e).forEach(k=>a.push({...ptOf(e,k),lbl:ptName(e,k)})));
  S.objs.forEach((o,i)=>{a.push({x:o.x,y:o.y,lbl:(o.ext?'B':'A')+onm(i)});if(o.ext)a.push({x:o.x,y:0,lbl:'A'+onm(i)})});
  S.rays.forEach(r=>{if(!rayVis(r))return;const tr=trace(r);if(!tr)return;tr.T.pts.forEach((q,i)=>{if(practice&&!practice.revealed&&i>0)return;const e=S.els.find(c=>Math.abs(c.x-q.x)<1e-6);a.push({x:q.x,y:q.y,lbl:'ray hits '+(e&&e.t=='M'?'mirror':'lens')})})});
- S.lines.forEach(l=>{if(l.id!=skip&&l.vis)a.push({...l.a,lbl:'line end'},{...l.b,lbl:'line end'})});return a}
+ S.lines.forEach(l=>{if(l.id!=skip&&l.vis)a.push({...l.a,lbl:'line end'},{...l.b,lbl:'line end'})});(S.given||[]).forEach(g=>a.push({...g.a,lbl:'guideline'},{...g.b,lbl:'guideline'}));return a}
 let symG=null,shiftDown=false;
 addEventListener('keydown',e=>{if(e.key=='Shift')shiftDown=true});addEventListener('keyup',e=>{if(e.key=='Shift')shiftDown=false});addEventListener('blur',()=>{shiftDown=false});
 // symmetry snap (mirrors only): starting at a mirror vertex, snap to the reflection about the axis of any visible line through that vertex
@@ -38,11 +38,13 @@ function snapBase(p,from,skip){S.snapPt=null;S.snapLbl='';symG=null;const pts=sp
  if(from){const sy=symSnap(p,from,skip);if(sy){S.snapPt={x:sy.x,y:sy.y};S.snapLbl=sy.lbl;return{x:rnd4(sy.x),y:rnd4(sy.y)}}
   const dirs=[{dx:1,dy:0,lbl:'parallel to axis'}];pts.forEach(q=>{if(Math.hypot(q.x-from.x,q.y-from.y)>1e-6&&q.lbl!='line end')dirs.push({dx:q.x-from.x,dy:q.y-from.y,lbl:'through '+q.lbl})});
   S.lines.forEach((l,i)=>{if(l.id!=skip&&l.vis)dirs.push({dx:l.b.x-l.a.x,dy:l.b.y-l.a.y,lbl:'parallel to line '+(i+1)})});
+  (S.given||[]).forEach(g=>dirs.push({dx:g.b.x-g.a.x,dy:g.b.y-g.a.y,lbl:'parallel to the guideline'}));
   S.rays.forEach((r,i)=>{if(!rayVis(r))return;const L=lineOf(r);if(L)dirs.push({dx:1,dy:L.s,lbl:practice&&!practice.revealed?'parallel to incident ray':'parallel to ray '+(i+1)})});
   let bb=null,b2=tol(.25);dirs.forEach(d=>{const n=Math.hypot(d.dx,d.dy);if(n<1e-9)return;const ux=d.dx/n,uy=d.dy/n,vx=p.x-from.x,vy=p.y-from.y,t=vx*ux+vy*uy,dist=Math.abs(vx*uy-vy*ux);if(dist<b2){b2=dist;bb={x:from.x+t*ux,y:from.y+t*uy,lbl:d.lbl}}});
   if(bb){S.snapPt={x:bb.x,y:bb.y};S.snapLbl=bb.lbl;return{x:rnd4(bb.x),y:rnd4(bb.y)}}}
  return{x:sn(p.x),y:sn(p.y)}}
 function drawExtras(hnd,E,ax){
+ (S.given||[]).forEach(g=>{ln(g.a.x,g.a.y,g.b.x,g.b.y,'#1f9d55',2,[3,3]);S.segs.push({id:'given',a:[[g.a.x,g.a.y,g.b.x,g.b.y]]})}); // the exam's guideline rays
  S.lines.forEach((l,i)=>{if(!l.vis)return;const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,n=Math.hypot(dx,dy)||1,ux=dx/n,uy=dy/n;
   const lc=l.c||LC;
   if(l.k=='bold')ln(l.a.x,l.a.y,l.b.x,l.b.y,lc,3.2);else{cx.globalAlpha=.9;ln(l.a.x-ux*FAR,l.a.y-uy*FAR,l.b.x+ux*FAR,l.b.y+uy*FAR,lc,2.1,[1.6,5]);cx.globalAlpha=1}

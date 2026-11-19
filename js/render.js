@@ -18,7 +18,7 @@ function drawTrace(tr,col,dash,img,tgt){const{L,T,h}=tr,e0=srt()[0],p=T.pts,f=T.
  const I=incSeg(L,e0,h);
  if(L.free||L.P.x<e0.x)ln(...I,col,1.6,dash);
  else{ln(...I,col,1.6,dash);if(!L.guide){ln(e0.x,h,L.P.x,L.P.y,col,1.4,[2,3]);faint(L.P.x,L.P.y,FAR,L.P.y+L.s*(FAR-L.P.x))}}
- for(let i=0;i<p.length-1;i++)ln(p[i].x,p[i].y,p[i+1].x,p[i+1].y,col,1.6,dash);
+ for(let i=0;i<p.length-1;i++)ln(p[i].x,p[i].y,p[i+1].x,p[i+1].y,col,1.6,p[i].skip?[4,3]:dash);
  const te=f.dx>0?FAR-f.x:f.x+FAR;ln(f.x,f.y,f.x+f.dx*te,f.y+f.dy*te,col,1.6,dash);
  if(tgt&&!L.guide&&tgt.x>e0.x+1e-6)faint(e0.x,h,tgt.x,h+L.s*(tgt.x-e0.x)); // intended path to the aim point
  // virtual extension: dashed back to the image (or axis crossing), faint beyond it
@@ -41,13 +41,17 @@ function draw(){const w=cv.clientWidth;dpr=forceW?forceW/w:(devicePixelRatio||1)
  const PP=ppOn()?principalPlanes():null;
  if(PP){const pc=css('--pp');ln(PP.H,-6.5,PP.H,6.5,pc,1.4,[7,3,1.5,3]);ln(PP.Hp,-6.5,PP.Hp,6.5,pc,1.4,[7,3,1.5,3]);
   const same=Math.abs(PP.H-PP.Hp)<.3;txo('H',PP.H,6.5,same?-.55:-.2,-.55,pc,16);txo('H′',PP.Hp,6.5,same?.12:-.2,same?-.55:-1.15,pc,16)}
- if($('fp').checked)E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t=='L')ln(e.x+e.f,-6.5,e.x+e.f,6.5,ax,1,[2,4])});
+ if($('fp').checked)E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t!='M'){const fx=(e.t=='T'?e.xp:e.x)+e.f;ln(fx,-6.5,fx,6.5,ax,1,[2,4])}});
  E.forEach(e=>{const n=nm(e);
-  if(e.t=='L'){ln(e.x,-6.5,e.x,6.5,fg,3);const s=e.f>0?1:-1;for(const y of[6.5,-6.5]){const d=y>0?-1:1;ln(e.x,y,e.x-.2,y+d*.45*s,fg,3);ln(e.x,y,e.x+.2,y+d*.45*s,fg,3)}
-   cross(e.x,0,fg);txo('O'+n,e.x,0,.2,-.6,fg,17);cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);cross(e.x+e.f,0,fg,"F′"+n,-.2,-.6)}
+  const sh=k=>!e.m||e.m.includes(k);
+  if(e.t=='T'){const sc2=css('--axis');(e.surf||[]).forEach(([xe,xv])=>{cx.save();cx.globalAlpha=.45;cx.strokeStyle=sc2;cx.lineWidth=4*dpr;cx.beginPath();cx.moveTo(X(xe),Y(6.5));cx.quadraticCurveTo(X(2*xv-xe),Y(0),X(xe),Y(-6.5));cx.stroke();cx.restore()});
+   ln(e.x,-6.5,e.x,6.5,fg,1.6,[5,4]);ln(e.xp,-6.5,e.xp,6.5,fg,1.6,[5,4]);txo('H'+n,e.x,0,.15,-.6,fg,17);txo('H′'+n,e.xp,0,.15,-.6,fg,17);
+   if(sh('F'))cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);if(sh('Fp'))cross(e.xp+e.f,0,fg,"F′"+n,-.2,-.6)}
+  else if(e.t=='L'){ln(e.x,-6.5,e.x,6.5,fg,3);const s=e.f>0?1:-1;for(const y of[6.5,-6.5]){const d=y>0?-1:1;ln(e.x,y,e.x-.2,y+d*.45*s,fg,3);ln(e.x,y,e.x+.2,y+d*.45*s,fg,3)}
+   if(sh('O')){cross(e.x,0,fg);txo('O'+n,e.x,0,.2,-.6,fg,17)}if(sh('F'))cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);if(sh('Fp'))cross(e.x+e.f,0,fg,"F′"+n,-.2,-.6)}
   else{const b=e.f>0?-1:1;cx.beginPath();cx.strokeStyle=fg;cx.lineWidth=4*dpr;cx.moveTo(X(e.x+b),Y(6.5));cx.lineTo(X(e.x),Y(4.5));cx.lineTo(X(e.x),Y(-4.5));cx.lineTo(X(e.x+b),Y(-6.5));cx.stroke();
    for(let k=0;k<3;k++)ln(e.x,3.6+k*.4,e.x+.45,4.05+k*.4,fg,1.5);
-   cross(e.x,0,fg);txo('S'+n,e.x,0,-.7,-.6,fg,17);cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);cross(e.x-2*e.f,0,fg,'C'+n,-.2,-.6)}});
+   if(sh('O')){cross(e.x,0,fg);txo('S'+n,e.x,0,-.7,-.6,fg,17)}if(sh('F'))cross(e.x-e.f,0,fg,'F'+n,-.2,-.6);if(sh('C'))cross(e.x-2*e.f,0,fg,'C'+n,-.2,-.6)}});
  const imgs=S.objs.map((_,i)=>imageOf(i));
  if($('vall').checked)S.rays.forEach(r=>{if(!r.vis)return;const tr=trace(r);if(!tr)return;if(practice&&!practice.revealed){if(practice.task=='ray'&&r.id==practice.rid){const L=tr.L,e0=srt()[0],a=incSeg(L,e0,tr.h);ln(a[0],a[1],a[2],a[3],OC,2.2);S.segs.push({id:r.id,a:[a]})}return}drawTrace(tr,rayCol(r),r.aim.k=='guide'?[6,4]:null,r.src>=0?imgs[r.src].pt:null,aimTarget(r));S.segs.push({id:r.id,a:raySegs(tr)})});
  let info='';const R=[],hnd=[],f2=v=>+v.toFixed(2);drawExtras(hnd,E,ax);drawPupils(hnd,E);

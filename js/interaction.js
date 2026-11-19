@@ -4,12 +4,12 @@ let drag=null;
 function wp(ev){const r=cv.getBoundingClientRect(),k=W/view.z/r.width;return{x:view.x0+(ev.clientX-r.left)*k,y:view.y0-(ev.clientY-r.top)*k}}
 const sn=v=>$('snap').checked?Math.round(v/pref.step)*pref.step:v;
 let tool='move',TR=null,par=null,dragN=0,LP=null;
-function setTool(t){if(practice&&t=='trace'){toast('Trace is disabled in practice mode: use the line tools');t='line'}if(t=='mark'&&!(practice&&practice.task=='image')){toast('The Mark tool is for the "find the image" practice task');t='move'}if(t=='pupil'&&!(practice&&practice.task=='pupils')){toast('The Pupil tool is for the "locate the pupils" practice task');t='move'}
+function setTool(t){if(practice&&t=='trace'){toast('Trace is disabled in practice mode: use the line tools');t='line'}if(t=='mark'&&!(practice&&(practice.task=='image'||practice.task=='focal'))){toast('The Mark tool is for the "find the image" practice task');t='move'}if(t=='pupil'&&!(practice&&practice.task=='pupils')){toast('The Pupil tool is for the "locate the pupils" practice task');t='move'}
  tool=t;par=null;LP=null;S.pl=null;S.snapPt=null;S.snapLbl='';document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool==t));cv.style.cursor=t=='move'?'default':'crosshair';S.prev=null;draw()}
-function parPt(p){S.snapLbl='';let best=null,bd=tol(.6);S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best=T}}));if(best){S.snapPt=best;return best}return{x:sn(p.x),y:sn(p.y)}}
+function parPt(p){S.snapLbl='';let best=null,bd=tol(.6);S.els.forEach(e=>ptsOf(e).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best=T}}));if(best){S.snapPt=best;return best}return{x:sn(p.x),y:sn(p.y)}}
 function startPar(r){par=r.id;S.prev=null;S.snapPt=null}
 function aimFrom(p,src){S.snapLbl='';const e0=srt()[0];if(!e0)return null;const Q=src>=0?S.objs[src]:null;let best=null,bd=tol(.6);
- S.els.forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best={k:'pt',el:e.id,p:k,T}}}));
+ S.els.forEach(e=>ptsOf(e).forEach(k=>{const T=ptOf(e,k),d=Math.hypot(T.x-p.x,T.y-p.y);if(d<bd){bd=d;best={k:'pt',el:e.id,p:k,T}}}));
  if(best){S.snapPt=best.T;const{T,...a}=best;return a}
  if(Q&&p.x>Q.x&&Math.abs(p.y-Q.y)<tol(.3))return{k:'par'};
  if(Math.abs(p.x-e0.x)<tol(.8))return{k:'hit',h:sn(p.y)};
@@ -55,7 +55,7 @@ const endPtr=ev=>{lpCancel();tps.delete(ev.pointerId);if(tps.size<2)pinch=null;i
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 addEventListener('keydown',e=>{if(e.code=='Space'&&!/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)&&$('mdl').style.display!='flex'){spaceDown=true;curs();e.preventDefault()}});
 addEventListener('keyup',e=>{if(e.code=='Space'){spaceDown=false;curs()}});addEventListener('blur',()=>{spaceDown=false;curs()});
-const ptTool=()=>(tool=='line'||tool=='cons'||(tool=='mark'&&practice&&practice.task=='image')||(tool=='pupil'&&practice&&practice.task=='pupils'))&&!par;
+const ptTool=()=>(tool=='line'||tool=='cons'||(tool=='mark'&&practice&&(practice.task=='image'||practice.task=='focal'))||(tool=='pupil'&&practice&&practice.task=='pupils'))&&!par;
 function placePt(q){ // q is an already snapped point: start/finish a line, or place the answer marker
  if(tool=='mark'){practice.ans=q;S.pl=null}
  else if(tool=='pupil'){(practice.pups=practice.pups||[]).push({x:q.x,r:Math.max(.1,Math.abs(q.y))});S.pl=null}

@@ -1,8 +1,8 @@
 // Core constants, view state and the practice exercise catalog
-const W=18,H=14,cv=document.getElementById('cv'),cx=cv.getContext('2d'),$=id=>document.getElementById(id);
+let H=14;const W=18,cv=document.getElementById('cv'),cx=cv.getContext('2d'),$=id=>document.getElementById(id);
 
 // ---- toolbars: each control is declared once in CTRL; a toolbar is only a list of groups
-const HOME={z:1,x0:0,y0:H/2},view={...HOME},tol=v=>v/view.z,FAR=2000,clx=v=>Math.max(-500,Math.min(W+500,v)); // FAR: how far rays/lines are drawn; clx: how far elements and objects may be placed; view: zoom factor + world coords of the visible top-left corner; tol(): pick radius in world units that stays constant on screen
+const HOME={z:1,x0:0,y0:H/2},HOME0={...HOME},view={...HOME},tol=v=>v/view.z,FAR=2000,clx=v=>Math.max(-500,Math.min(W+500,v)); // FAR: how far rays/lines are drawn; clx: how far elements and objects may be placed; view: zoom factor + world coords of the visible top-left corner; tol(): pick radius in world units that stays constant on screen
 // ---- practice exercises: one declarative catalog. el = [type, x, f] (L lens / M mirror; f<0 means diverging / convex), then either obj = [x, y] or ray = [height at the element, y at x=0]
 const EX=[
  {id:'conv-far',task:'image',title:'Converging lens: object beyond 2F',el:['L',9,3],obj:[1,2]},
@@ -30,7 +30,8 @@ const EX=[
  {id:'sys-ray-a',grp:'sys-ray',task:'ray',title:'Two converging lenses: oblique ray',els:[['L',5,3],['L',13,3]],ray:[2,-1]},
  {id:'sys-ray-b',grp:'sys-ray',task:'ray',title:'Converging then diverging lens: oblique ray',els:[['L',5,3],['L',12,-3]],ray:[2,-1]},
  {id:'sys-ray-c',grp:'sys-ray',task:'ray',title:'Converging lens and concave mirror: ray from the left',els:[['L',5,3],['M',15,4]],ray:[2,0]}];
-const EXGROUPS=[['image','Find the image'],['ray','Find the emerging ray'],['sys-image','Systems: find the image of AB'],['sys-ray','Systems: find the emerging ray'],['pupils','Systems: locate the pupils']];
+if(typeof EXAMS!='undefined')EX.push(...EXAMS);
+const EXGROUPS=[['image','Find the image'],['ray','Find the emerging ray'],['sys-image','Systems: find the image of AB'],['sys-ray','Systems: find the emerging ray'],['pupils','Systems: locate the pupils'],['oe-exams','Optical Engineering exams (UJM)']];
 const EXOPTS=EXGROUPS.map(([k,label])=>({label,items:[...EX.filter(e=>(e.grp||e.task)==k).map(e=>[e.id,e.title]),...(k=='image'||k=='ray'?[['rand-'+k,'Random exercise']]:[])]}));
 const exTitle=id=>(EX.find(e=>e.id==id)||{title:'Random exercise'}).title;
 function randomDef(task){const K=[['L',1],['L',-1],['M',1],['M',-1]],[t,sg]=K[Math.floor(Math.random()*4)],f=sg*(3+Math.floor(Math.random()*3)),ex=8+Math.floor(Math.random()*3),d={task,rand:true,el:[t,ex,f]};

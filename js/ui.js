@@ -62,7 +62,7 @@ function renderInsp(){const box=$('insp'),T=selTarget();box.innerHTML='';box.cla
     const eye=B(svg(r.vis?'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>':'<path d="M3 3l18 18M10.6 5.1A10 10 0 0112 5c6 0 10 7 10 7a17 17 0 01-3 3.7M6.6 6.6C3.8 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 004.4-1"/>'),act(()=>{r.vis=!r.vis}),'ib',(r.vis?'Hide':'Show')+' ray');
     eye.setAttribute('aria-pressed',!r.vis);li.append(dot,t,eye,B(svg('<path d="M6 6l12 12M18 6L6 18"/>'),act(()=>delRay(r)),'ib','Remove ray'));ul.appendChild(li)});add(ul)}
   const ch=mk('div','chips');ch.append(mk('span','muted','Add'),B('Principal rays',act(()=>principal(i)),'chipb'),B('∥ axis',act(()=>addRay(i,{k:'par'})),'chipb'));
-  srt().forEach(e=>(e.t=='L'?['O','F','Fp']:['O','F','C']).forEach(p=>ch.appendChild(B('through '+ptName(e,p),act(()=>addRay(i,{k:'pt',el:e.id,p})),'chipb'))));
+  srt().forEach(e=>ptsOf(e).forEach(p=>ch.appendChild(B('through '+ptName(e,p),act(()=>addRay(i,{k:'pt',el:e.id,p})),'chipb'))));
   if(!S.els.length)ch.appendChild(mk('span','muted','(add a lens or mirror to trace rays)'));
   add(ch,B('Delete object',act(()=>{delObj(i);sel=null}),'danger'))}
  else if(T.k=='pup'){const p=T.p,E=srt(),n=E.length,P=pupilSpaces();

@@ -87,7 +87,7 @@ const PUP_HINTS = [
   practiceMsg = function () { return practice && practice.task == 'pupils' ? exTitle(practice.ex) + '\nPractice: locate the other pupils from the given one (red). Place each with the Pupil tool: tap where its upper edge goes (it is drawn symmetric about the axis). Construction lines help. Then Check.' : msg0(); };
   pracUI = function () { ui0(); if (practice && practice.task == 'pupils') $('ptask').textContent = 'Locate the ' + (srt().length > 1 ? 'other ' : '') + 'pupils from the given one: place each with the Pupil tool (tap its upper edge), then Check.'; setDis('[data-tool=pupil]', !(practice && practice.task == 'pupils')); };
   startPractice = function (task, ex) { if (task == 'pupils') { S.lines = []; practice = { task, ex, rid: null, revealed: false, hint: 0, ans: null, pups: [], fb: [], hintTxt: '' }; setTool('pupil'); panel(); draw(); return; } start0(task, ex); };
-  buildExercise = function (d) { S.pupil = d.pupil ? { x: d.pupil[0], r: d.pupil[1], sp: d.pupil[2] } : null; if (d.task == 'pupils') { S.els = (d.els || [d.el]).map((e, i) => ({ id: i + 1, t: e[0], x: e[1], f: e[2] })); uid = S.els.length + 1; S.objs = []; S.rays = []; S.lines = []; if (d.view) Object.assign(view, d.view); pre.value = ''; panel(); draw(); return; } build0(d); };
+  buildExercise = function (d) { S.pupil = d.pupil ? { x: d.pupil[0], r: d.pupil[1], sp: d.pupil[2] } : null; if (d.task == 'pupils') { exScene(d); pre.value = ''; panel(); draw(); return; } build0(d); };
 }
 // the result of a Check, for a page that embeds the playground (see embed.js); a no-op otherwise
 function emitResult(r) { if (typeof embedResult == 'function') embedResult(r); }
