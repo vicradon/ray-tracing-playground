@@ -54,7 +54,8 @@ function clearPar() { pSel = null; if (parL) endParLine(); else bar(); }
 function bar() {
   let t = $('pbar');
   if (!t) { t = document.createElement('div'); t.id = 'pbar'; t.className = 'partip'; cv.parentElement.appendChild(t); }
-  if (parL) t.innerHTML = '<span>' + PAR_TIP + '</span><button type="button" data-x>Cancel</button>';
+  clearTimeout(bar.t); t.classList.remove('brief', 'gone');
+  if (parL) { t.innerHTML = '<span>' + PAR_TIP + '</span>'; t.classList.add('brief'); bar.t = setTimeout(() => t.classList.add('gone'), 1000); } // a short nudge; Esc or another tool cancels
   else if (pSel && practice) t.innerHTML = '<span>' + pSel.name + '</span><button type="button" class="pri" data-par>' + PAR_ICON + 'Parallel</button><button type="button" data-x aria-label="Deselect" title="Deselect">×</button>';
   else { t.style.display = 'none'; return; }
   t.style.display = 'flex';
