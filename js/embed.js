@@ -2,10 +2,12 @@
 // exercise picker), for a page that hosts the playground in a frame (Margin's Drills). The host drives it with
 // messages and hears back:
 //   host -> playground  {type:'check'} | {type:'hint'} | {type:'reveal'} | {type:'hide'} | {type:'clear'} | {type:'load', ex}
+//                       {type:'restore', s}   (your work as a 'state' message gave it, when you come back to a question)
 //   playground -> host  {source:'optics-playground', type:'ready', ex}
 //                       {source:'optics-playground', type:'result', ex, ok, fb:[[kind, text]], revealed}
 //                       {source:'optics-playground', type:'size', h}   (content height, to size the frame)
 //                       {source:'optics-playground', type:'reveal', ex, shown}   (Show / Hide solution, from either side)
+//                       {source:'optics-playground', type:'state', ex, s}   (your work so far, after each change: lines, marker, pupils)
 // It also works on its own (open the address), with its own Check, Hint and Show solution buttons.
 const EMBED = (() => { const q = new URLSearchParams(location.search); return q.get('embed') == '1' ? { ex: q.get('ex') || '', host: q.get('host') || '' } : null; })();
 const toHost = (m) => { if (EMBED && parent !== window) parent.postMessage({ source: 'optics-playground', ...m }, '*'); };
@@ -37,8 +39,13 @@ if (EMBED) {
     else if (m.type == 'hide') toggleSolution(false);
     else if (m.type == 'clear') document.querySelector('[data-act=clear]').click();
     else if (m.type == 'load' && EX.find((x) => x.id == m.ex)) newExercise(m.ex);
+    else if (m.type == 'restore' && typeof m.s == 'string') { try { restore(m.s); Object.assign(hist, { u: [], r: [], key: null }); updBtns(); } catch (e) {} }
   });
   addEventListener('resize', sendSize);
+  { // the host keeps your work, so a question you put off comes back as you left it
+    let stT = 0; const c0 = commit;
+    commit = function () { const before = hist.cur; c0(); if (hist.cur !== before && hist.cur) { clearTimeout(stT); stT = setTimeout(() => toHost({ type: 'state', ex: practice && practice.ex, s: hist.cur }), 250); } };
+  }
   if (d) heightGrip(d);
   toHost({ type: 'ready', ex: d ? d.id : null }); sendSize();
 }

@@ -29,13 +29,13 @@ function rayMenu(r){const it=[{l:rayDesc(r),h:1},{l:'Parallel',f:()=>startPar(r,
  if(r.aim.k=='hit'&&r.src<0&&!S.rays.some(g=>g.aim.k=='guide'&&g.aim.ref==r.id))it.push({l:'Add guideline',f:()=>addRay(-1,{k:'guide',ref:r.id})});it.push({l:'Remove ray',f:()=>delRay(r)});return it}
 document.addEventListener('pointerdown',e=>{if(!ctx.contains(e.target))ctx.style.display='none'});
 const hist={u:[],r:[],cur:null,key:null,t:0};
-function ser(){return JSON.stringify({els:S.els,objs:S.objs,rays:S.rays,lines:S.lines,pupil:S.pupil||null,uid,pr:practice?{ans:practice.ans||null,pups:practice.pups||null}:null})} // pr: your answer marker and placed pupils, so undo covers them too
+function ser(){return JSON.stringify({els:S.els,objs:S.objs,rays:S.rays,lines:S.lines,pupil:S.pupil||null,uid,pr:practice&&(practice.ans||(practice.pups&&practice.pups.length))?{ans:practice.ans||null,pups:practice.pups||null}:null})} // null when empty, so a fresh exercise has nothing to undo // pr: your answer marker and placed pupils, so undo covers them too
 function updBtns(){document.querySelectorAll('[data-act=undo]').forEach(b=>b.disabled=!hist.u.length);document.querySelectorAll('[data-act=redo]').forEach(b=>b.disabled=!hist.r.length)}
 function commit(){const j=ser();if(hist.cur===null){hist.cur=j;updBtns();return}if(j===hist.cur)return;
  const key=drag?'d'+dragN:'i',now=Date.now();
  if(key==hist.key&&(drag||now-hist.t<400))hist.cur=j;else{hist.u.push(hist.cur);if(hist.u.length>200)hist.u.shift();hist.cur=j}
  hist.key=key;hist.t=now;hist.r=[];updBtns()}
-function restore(j){pSel=null;if(parL)endParLine();bar();const o=JSON.parse(j);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];S.pupil=o.pupil||null;uid=o.uid;if(practice&&o.pr){practice.ans=o.pr.ans;if(practice.pups||o.pr.pups)practice.pups=o.pr.pups||[]}S.prev=null;par=null;hist.cur=j;hist.key=null;panel();draw();updBtns()}
+function restore(j){pSel=null;if(parL)endParLine();bar();const o=JSON.parse(j);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];S.pupil=o.pupil||null;uid=o.uid;if(practice){practice.ans=o.pr?o.pr.ans:null;if(practice.pups)practice.pups=o.pr&&o.pr.pups||[]}S.prev=null;par=null;hist.cur=j;hist.key=null;panel();draw();updBtns()}
 function undo(){if(!hist.u.length)return;hist.r.push(hist.cur);restore(hist.u.pop())}
 function redo(){if(!hist.r.length)return;hist.u.push(hist.cur);restore(hist.r.pop())}
 addEventListener('keydown',e=>{if(e.key=='Escape'){ctx.style.display='none';if(parL)endParLine();else if(pSel){pSel=null;bar();draw()}if(par){par=null;S.prev=null;S.snapPt=null;draw()}}
