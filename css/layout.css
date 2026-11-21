@@ -235,7 +235,7 @@ body.embed .app { padding: 4px 4px calc(80px + env(safe-area-inset-bottom, 0px))
 body.embed .cvw { padding-top: 0; }
 body.embed.practice canvas { border: 1px solid var(--bd); }
 body.embed .tb .dis { display: none; }
-body.embed.hosted [data-act=eval] { display: none; }
+body.embed.hosted [data-act=eval], body.embed.hosted .tb .grp:has([data-act=eval]) { display: none; }
 body.embed .ebar { display: flex; gap: 6px; margin-top: 6px; }
 body.embed .ebar .grp { display: flex; gap: 6px; }
 body.embed .ebar button { border: 1px solid var(--bd); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
@@ -260,5 +260,7 @@ body.embed .tb, body.embed .tb .grp { flex-direction: row !important; }
 body.embed .tb .grp:first-of-type { flex: 1; justify-content: flex-start; gap: 2px; }
 body.embed .tb button { width: 50px; height: 46px; }
 body.embed .tb .sep { display: none; }
+body.embed .tb .ehist { gap: 0; }
+body.embed .tb .ehist button { width: 42px; }
 body.embed .cvw { max-width: none !important; margin: 0; }
 body.embed .stage { width: 100%; }

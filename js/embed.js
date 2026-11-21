@@ -21,6 +21,7 @@ let sizeT = 0; const sendSize = () => { clearTimeout(sizeT); sizeT = setTimeout(
 if (EMBED) {
   document.body.classList.add('embed'); if (parent !== window) document.body.classList.add('hosted');
   buildToolbar($('embedBar'), [{ items: ['hint', 'show', 'clear'] }]);
+  buildToolbar($('tbPrac'), [{ items: ['undo', 'redo'], cls: 'ehist' }]); updBtns(); // the header with undo / redo is hidden here, so they sit at the end of the tools
   if (parent !== window) toast = () => {}; // the host says right or wrong
   const d = EX.find((e) => e.id == EMBED.ex);
   if (d) newExercise(d.id); else { document.body.classList.add('embed-missing'); $('embedFb') && ($('embedFb').textContent = 'Exercise "' + EMBED.ex + '" not found.'); }
