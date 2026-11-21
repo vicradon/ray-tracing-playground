@@ -12,9 +12,9 @@ function showMenu(ev,items){ctx.innerHTML='';items.forEach(it=>{if(it.sep){ctx.a
  ctx.style.display='block';ctx.style.left=Math.max(8,Math.min(ev.clientX,innerWidth-ctx.offsetWidth-8))+'px';ctx.style.top=Math.min(ev.clientY,innerHeight-ctx.offsetHeight-8)+'px'}
 cv.oncontextmenu=ev=>{ev.preventDefault();
  if(ev.touch||ev.pointerType=='touch'||tps.size){if(Date.now()-lpAt<1000)return;lpAt=Date.now();cancelGesture();if(navigator.vibrate)navigator.vibrate(12)} // long press: our timer or the browser's own, whichever comes first
- const p=wp(ev);let items=null;
+ const p=wp(ev);menuP=p;let items=null;
  if(practice){const ho=(S.hnd||[]).find(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)),l=ho&&ho.k=='lp'?S.lines.find(q=>q.id==ho.id):S.lines.find(q=>lineHit(q,p,.3));const g=!l&&(S.given||[]).find(g=>dseg(p,[g.a.x,g.a.y,g.b.x,g.b.y])<tol(.3));
- if(l)showMenu(ev,lineMenu(l.id));else if(g)showMenu(ev,[{l:'Guideline',h:1},{l:'Draw parallel',f:()=>startParLine(g.a,g.b)}]);else if(ho&&ho.k=='ans')showMenu(ev,[{l:'Answer marker',h:1},{l:'Remove marker',f:()=>{practice.ans=null}}]);return}
+ if(l)showMenu(ev,lineMenu(l.id));else if(g)showMenu(ev,[{l:'Guideline',h:1},{l:'Parallel',f:()=>startParLine(g.a,g.b)}]);else if(ho&&ho.k=='ans')showMenu(ev,[{l:'Answer marker',h:1},{l:'Remove marker',f:()=>{practice.ans=null}}]);return}
  const ho=(S.hnd||[]).filter(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)).sort((a,b)=>(a.k=='obj'?0:1)-(b.k=='obj'?0:1))[0];
  if(ho&&ho.k=='obj'){const i=ho.i,o=S.objs[i];items=[{l:(o.ext?'Arrow':'Point')+' object',h:1},{l:'Add principal rays',f:()=>principal(i)},{l:o.ext?'Make point object':'Make arrow object',f:()=>{o.ext=!o.ext;if(o.ext&&Math.abs(o.y)<.1)o.y=3}},{l:'Remove object',f:()=>delObj(i)}]}
  else if(ho&&ho.k=='lp'){items=lineMenu(ho.id)}else if(ho){const r=S.rays.find(q=>q.id==ho.id);items=r?rayMenu(r):null}
@@ -25,7 +25,7 @@ cv.oncontextmenu=ev=>{ev.preventDefault();
  if(!items){const pos={x:p.x,y:p.y};items=[{l:'Add here',h:1},{l:'Converging lens',f:()=>add('L+',pos)},{l:'Diverging lens',f:()=>add('L-',pos)},{l:'Concave mirror',f:()=>add('M+',pos)},{l:'Convex mirror',f:()=>add('M-',pos)},{l:'Point object',f:()=>add('P',pos)},{l:'Arrow object',f:()=>add('A',pos)}];
   if(S.objs.length)items.push({l:'Add principal rays for all objects',f:()=>S.objs.forEach((_,i)=>principal(i))});if(S.rays.length)items.push({l:'Remove all rays',f:()=>{S.rays=[]}});items.push({l:'Clear everything',f:()=>{S={els:[],objs:[],rays:[],lines:[]}}})}
  showMenu(ev,items)};
-function rayMenu(r){const it=[{l:rayDesc(r),h:1},{l:'Trace parallel ray',f:()=>startPar(r)},{l:'Hide ray',f:()=>{r.vis=false}}];
+function rayMenu(r){const it=[{l:rayDesc(r),h:1},{l:'Parallel',f:()=>startPar(r,menuP)},{l:'Hide ray',f:()=>{r.vis=false}}];
  if(r.aim.k=='hit'&&r.src<0&&!S.rays.some(g=>g.aim.k=='guide'&&g.aim.ref==r.id))it.push({l:'Add guideline',f:()=>addRay(-1,{k:'guide',ref:r.id})});it.push({l:'Remove ray',f:()=>delRay(r)});return it}
 document.addEventListener('pointerdown',e=>{if(!ctx.contains(e.target))ctx.style.display='none'});
 const hist={u:[],r:[],cur:null,key:null,t:0};
@@ -35,8 +35,8 @@ function commit(){const j=ser();if(hist.cur===null){hist.cur=j;updBtns();return}
  const key=drag?'d'+dragN:'i',now=Date.now();
  if(key==hist.key&&(drag||now-hist.t<400))hist.cur=j;else{hist.u.push(hist.cur);if(hist.u.length>200)hist.u.shift();hist.cur=j}
  hist.key=key;hist.t=now;hist.r=[];updBtns()}
-function restore(j){const o=JSON.parse(j);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];S.pupil=o.pupil||null;uid=o.uid;S.prev=null;par=null;hist.cur=j;hist.key=null;panel();draw();updBtns()}
+function restore(j){pSel=null;if(parL)endParLine();bar();const o=JSON.parse(j);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];S.pupil=o.pupil||null;uid=o.uid;S.prev=null;par=null;hist.cur=j;hist.key=null;panel();draw();updBtns()}
 function undo(){if(!hist.u.length)return;hist.r.push(hist.cur);restore(hist.u.pop())}
 function redo(){if(!hist.r.length)return;hist.u.push(hist.cur);restore(hist.r.pop())}
-addEventListener('keydown',e=>{if(e.key=='Escape'){ctx.style.display='none';if(parL)endParLine();if(par){par=null;S.prev=null;S.snapPt=null;draw()}}
+addEventListener('keydown',e=>{if(e.key=='Escape'){ctx.style.display='none';if(parL)endParLine();else if(pSel){pSel=null;bar();draw()}if(par){par=null;S.prev=null;S.snapPt=null;draw()}}
  const k=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&!/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){if(k=='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(k=='y'){e.preventDefault();redo()}}});

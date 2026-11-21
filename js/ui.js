@@ -22,7 +22,7 @@ cv.addEventListener('pointerdown',ev=>{tapS=ev.isPrimary&&ev.button==0?{x:ev.cli
 cv.addEventListener('pointermove',ev=>{if(tapS&&(ev.pointerId!=tapS.id||Math.hypot(ev.clientX-tapS.x,ev.clientY-tapS.y)>8))tapS=null},{capture:true});
 cv.addEventListener('pointerup',ev=>{const t=tapS;tapS=null;if(!t||ev.pointerId!=t.id||Date.now()-t.t>600||tool!='move'||par||parL||Date.now()-lpAt<800)return;
  const p=wp(ev);setTimeout(()=>tapSelect(p),0)},{capture:true});
-function tapSelect(p){let h=hitAt(p);if(practice&&h&&h.k!='line')h=null;
+function tapSelect(p){menuP=p;let h=hitAt(p);if(practice){pickPar(p);if(h&&h.k!='line')h=null}
  select(!h?null:h.k=='pup'?{k:'pup'}:h.k=='obj'?{k:'obj',i:h.i}:h.k=='el'?{k:'el',id:h.e.id}:h.k=='ray'?{k:'ray',id:h.r.id}:{k:'line',id:h.l.id})}
 
 // ---- small builders
@@ -74,7 +74,7 @@ function renderInsp(){const box=$('insp'),T=selTarget();box.innerHTML='';box.cla
  else if(T.k=='ray'){const r=T.r,src=r.src>=0?(S.objs[r.src].ext?'B':'A')+onm(r.src):null,g=r.aim.k=='guide';
   add(head(icon('trace'),g?'Guideline':src?'Ray from '+src:'Free ray',rayCol(r)));const p=mk('p');p.textContent=rayDesc(r).replace(/^[^:]+: /,'');add(p);
   const row=mk('div','btns');row.append(B(r.vis?'Hide ray':'Show ray',act(()=>{r.vis=!r.vis})));
-  if(!g)row.append(B('Trace parallel ray',()=>{startPar(r);sel=null;panel();draw();toast('Tap where the parallel ray should pass')}));
+  if(!g)row.append(B('Parallel',()=>{startPar(r,menuP);sel=null;panel();draw()}));
   if(r.aim.k=='hit'&&r.src<0&&!S.rays.some(q=>q.aim.k=='guide'&&q.aim.ref==r.id))row.append(B('Add guideline',act(()=>addRay(-1,{k:'guide',ref:r.id}))));
   if(r.aim.k=='hit'||r.aim.k=='at'||r.aim.k=='dir'||r.src<0)add(row,mk('p','muted','Drag its round handles on the canvas to aim it.'));else add(row);
   add(B('Delete ray',act(()=>{delRay(r);sel=null}),'danger'))}

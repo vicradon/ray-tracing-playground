@@ -62,7 +62,7 @@ function setPref(o){Object.assign(pref,o);try{localStorage.setItem('raylab.prefs
 const tgl=id=>{$(id).checked=!$(id).checked};
 function fDlg(){const inp=document.createElement('input');inp.type='number';inp.step='0.5';inp.value=pref.f;const d=txt('<div class="muted">Focal length given to new lenses and mirrors (grid units)</div>');d.appendChild(inp);
  modal('Default focal length',d,[{l:'OK',p:1,f:()=>{const v=Math.abs(+inp.value);if(!v)return false;setPref({f:v})}},{l:'Cancel'}])}
-function shortcutsDlg(){const rows=[['Tools',[['M','Move'],['T','Trace ray'],['Shift+T','Parallel ray (hover a ray first)'],['L / B','Bold line (solid segment)'],['C','Construction line (dotted, infinite)'],['X','Mark answer (practice)'],['E / Enter','Evaluate (practice)']]],
+function shortcutsDlg(){const rows=[['Tools',[['M','Move'],['T','Trace ray'],['Shift+T','Parallel to the ray under the cursor (then tap a point)'],['L / B','Bold line (solid segment)'],['C','Construction line (dotted, infinite)'],['X','Mark answer (practice)'],['E / Enter','Evaluate (practice)']]],
  ['Add at the cursor',[['1','Converging lens'],['2','Diverging lens'],['3','Concave mirror'],['4','Convex mirror'],['P','Point object'],['A','Arrow object']]],
  ['View',[['+ / \u2212','Zoom in / out'],['0','Reset zoom to 100%'],['Ctrl + scroll, or pinch','Zoom at the pointer'],['Scroll, or Space + drag','Pan once the view is zoomed or moved']]],
  ['Rays and editing',[['R','Principal rays for all objects'],['H','Hide the ray under the cursor'],['Delete','Remove the element, object or ray under the cursor'],['Esc','Cancel / back to Move']]],
@@ -102,7 +102,7 @@ addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(/INPU
  else if(k=='u')setTool('pupil');
  else if(k=='d'&&!practice)add('D',lastP||undefined);
  else if((k=='e'||k=='enter')&&practice)evaluate();
- else if(k=='t'){if(sh){const h=hitAt(lastP);if(h&&h.k=='ray'){startPar(h.r);draw()}else toast('Hover over a ray, then press Shift+T')}else setTool('trace')}
+ else if(k=='t'){if(sh){const h=hitAt(lastP);if(h&&h.k=='ray'){startPar(h.r,lastP);draw()}else toast('Hover over a ray, then press Shift+T')}else setTool('trace')}
  else if(k=='p')add('P',lastP||undefined);
  else if(k=='a')add('A',lastP||undefined);
  else if(k=='r'){S.objs.forEach((_,i)=>principal(i));panel();draw()}

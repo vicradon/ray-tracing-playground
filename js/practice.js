@@ -23,9 +23,9 @@ function evalImage(){const o=S.objs[0],e0=srt()[0],im=trueImage(0);if(!im.pt)ret
  if(!practice.ans)fb.push(['warn','Place your image marker with the Mark tool (X), ideally on an intersection of your lines.']);
  else{const d=Math.hypot(practice.ans.x-T.x,practice.ans.y-T.y);posOK=d<=.35;fb.push([posOK?'ok':'bad',posOK?`Marked image position is correct (off by ${d.toFixed(2)}).`:`Marked image position is off by ${d.toFixed(2)} units.`])}
  const F={x:e0.x-e0.f,y:0},Oc={x:e0.x,y:0},C={x:e0.x-2*e0.f,y:0},multi=S.els.length>1;
- const Ls=S.lines.map((l,i)=>({l,i:i+1,P:dLine(o,l)<.2,T:dLine(T,l)<.2})).filter(q=>q.l.vis);
+ const Ls=S.lines.map((l,i)=>({l,i:i+1,P:dLine(o,l)<.2,T:dLine(T,l)<.2})).filter(q=>q.l.vis),Lc=Ls.filter(q=>q.l.k=='bold'); // dotted construction lines are helpers: not judged one by one
  if(!Ls.length)fb.push(['warn','No lines yet. Draw at least two rays from the object.']);
- Ls.forEach(q=>{const sl=Math.abs(q.l.b.x-q.l.a.x)<1e-9?1e9:(q.l.b.y-q.l.a.y)/(q.l.b.x-q.l.a.x);let kind='ray through the object';
+ Lc.forEach(q=>{const sl=Math.abs(q.l.b.x-q.l.a.x)<1e-9?1e9:(q.l.b.y-q.l.a.y)/(q.l.b.x-q.l.a.x);let kind='ray through the object';
   if(q.P){if(Math.abs(sl)<.03)kind='ray parallel to the axis';else if(dLine(F,q.l)<.2)kind='ray through F';else if(dLine(Oc,q.l)<.2)kind='ray through the '+(e0.t=='L'?'centre O':'vertex S');else if(e0.t=='M'&&dLine(C,q.l)<.2)kind='ray through C'}
   if(q.P&&q.T)fb.push(['ok',`Line ${q.i}: valid, a ${kind} that continues through the image.`]);
   else if(q.P)fb.push(['ok',`Line ${q.i}: valid incident ${kind}.`]);
@@ -56,9 +56,32 @@ function evalRay(){const r=S.rays.find(q=>q.id==practice.rid),tr=r&&trace(r);if(
  if(ok&&n>1)fb.unshift(['ok','Correct: the ray is followed through all '+n+' element hits.']);
  return{ok,fb}}
 function evaluate(){if(!practice)return;const r=practice.task=='image'?evalImage():evalRay();practice.fb=r.fb;pracUI();toast(r.ok?'Correct!':'Not yet, see the feedback');if(typeof emitResult=='function')emitResult(r)}
-function hintStep(){if(!practice)return;practice.hint=Math.min(3,practice.hint+1);const h=practice.hint-1;
+// Show solution / Hide solution: showing adds the solution rays (and turns on what the task hides); hiding takes
+// exactly those back, so your own construction is as you left it. The host hears {type:'reveal', shown}.
+function toggleSolution(show){if(!practice)return;if(show==null)show=!practice.revealed;if(show==!!practice.revealed)return;
+ if(show){const ids=S.rays.map(r=>r.id),pp=$('pp').checked; // the solution rays only exist once revealed
+  if(practice.task=='image'){if(!S.rays.length)S.objs.forEach((_,i)=>principal(i))}
+  else if(practice.task=='ray'&&!S.rays.some(q=>q.aim.k=='guide'))addRay(-1,{k:'guide',ref:practice.rid});
+  else if(practice.task=='focal'&&!S.rays.length){const r=addRay(-1,{k:'hit',h:3});r.y0=3;$('pp').checked=true}
+  practice.sol={rays:S.rays.filter(r=>!ids.includes(r.id)).map(r=>r.id),pp};practice.revealed=true;practice.everRevealed=true}
+ else{const s=practice.sol||{rays:[],pp:$('pp').checked};S.rays=S.rays.filter(r=>!s.rays.includes(r.id));$('pp').checked=s.pp;practice.sol=null;practice.revealed=false}
+ pSel=null;bar();pracUI();draw();if(typeof toHost=='function')toHost({type:'reveal',ex:practice.ex,shown:show})}
+// Past exams that do not draw F (only O or the vertex S) leave finding it to you, from the given guideline ray.
+// The first hint and the task line then say so and how; an object on the axis gets its own first hint.
+const fHidden=()=>S.els.some(e=>!ptsOf(e).includes('F'));
+function findFText(){const e=S.els.find(q=>!ptsOf(q).includes('F'));if(!e)return'';
+ if(e.t=='M')return (S.given||[]).length==1?'F and C are not drawn. The given guideline ray is reflected onto itself, so it goes through C: C is where it crosses the axis, and F is halfway between C and S. ':
+  'F and C are not drawn: find them first. From the vertex S, draw a line parallel to the incoming guideline ray, then its mirror image about the axis (start a line at S: it snaps to the mirror image). That image meets the reflected guideline ray on the focal plane F; C is twice as far from S as F. ';
+ return 'F\u2032 is not drawn: find its focal plane first. Draw a line through O parallel to the incoming guideline ray; it meets the outgoing guideline ray on the focal plane F\u2032. '}
+function firstHint(t){const pre=findFText(),o=S.objs[0];
+ if(practice.task=='image'&&o&&Math.abs(o.y)<1e-6&&S.els.length==1){const m=S.els[0].t=='M';
+  t='A is on the axis, so its principal rays all lie on the axis. Draw any other ray through A'+(o.x>S.els[0].x?' (A is virtual: the ray arrives from the left, aimed at A)':'')+'. Find where it leaves the '+(m?'mirror: a guideline through S or C parallel to it, then the focal plane F':'lens: a guideline through O parallel to it, then the focal plane F\u2032')+'. A\u2032 is where that ray crosses the axis.'}
+ return pre+t}
+// Hints cycle one at a time: none, 1, 2, 3, none again
+const nextHint=()=>{practice.hint=(practice.hint+1)%4;return practice.hint};
+function hintStep(){if(!practice)return;if(!nextHint()){practice.hintTxt='';pracUI();draw();return}const h=practice.hint-1;
  const multi=S.els.length>1,mir=S.els[0]&&S.els[0].t=='M';
- practice.hintTxt=practice.task=='image'?[multi?'Work element by element. Draw two principal rays from B through the first element (parallel to the axis, through its centre O or vertex S, or through its F). Then treat each emerging ray as the incident ray of the next element: draw a guideline through that element\u2019s centre parallel to the ray and use its focal plane. The images are where the last emerging rays meet.':'Use two or three principal rays from the object: parallel to the axis, through the centre (O or vertex S), and through F (through C for a mirror). Where their emerging rays meet is the image.','One principal ray is now shown faintly. Draw it yourself with the construction line tool, then continue with another one.','All principal rays are shown faintly. Reproduce at least two with construction lines and mark where they meet.'][h]:[(mir?'Draw a guideline parallel to the incident ray, through C (it reflects back on itself) or through the vertex S (reflect it with the axis as the mirror line). The emerging ray goes through the point where the reflected guideline meets the focal plane F.':'Draw the guideline: a line through the centre O parallel to the incident ray. The emerging ray goes through the point where the guideline meets the focal plane F\u2032.')+(multi?' Repeat for each following element, using your own emerging ray as its incident ray.':''),'The guideline and the focal planes are now shown faintly.','The emerging ray is now shown faintly.'][h];pracUI();draw()}
+ practice.hintTxt=practice.task=='image'?[multi?'Work element by element. Draw two principal rays from B through the first element (parallel to the axis, through its centre O or vertex S, or through its F). Then treat each emerging ray as the incident ray of the next element: draw a guideline through that element\u2019s centre parallel to the ray and use its focal plane. The images are where the last emerging rays meet.':'Use two or three principal rays from the object: parallel to the axis, through the centre (O or vertex S), and through F (through C for a mirror). Where their emerging rays meet is the image.','One principal ray is now shown faintly. Draw it yourself with the construction line tool, then continue with another one.','All principal rays are shown faintly. Reproduce at least two with construction lines and mark where they meet.'][h]:[(mir?'Draw a guideline parallel to the incident ray, through C (it reflects back on itself) or through the vertex S (reflect it with the axis as the mirror line). The emerging ray goes through the point where the reflected guideline meets the focal plane F.':'Draw the guideline: a line through the centre O parallel to the incident ray. The emerging ray goes through the point where the guideline meets the focal plane F\u2032.')+(multi?' Repeat for each following element, using your own emerging ray as its incident ray.':''),'The guideline and the focal planes are now shown faintly.','The emerging ray is now shown faintly.'][h];if(h==0)practice.hintTxt=firstHint(practice.hintTxt);pracUI();draw()}
 // ---- workspaces: sandbox and practice each own their scene, history, view, tool and display options
 const wsSave=()=>({S,uid,H,home:{...HOME},hist:{...hist},view:{...view},tool,practice,curId,curName,savedJ,pre:pre.value,chk:{vall:$('vall').checked,fp:$('fp').checked,pl:$('pl').checked,pp:$('pp').checked}});
 function wsLoad(w){drag=null;S=w.S;uid=w.uid;H=w.H||14;Object.assign(HOME,w.home||HOME0);Object.assign(hist,w.hist);Object.assign(view,w.view);practice=w.practice;curId=w.curId;curName=w.curName;savedJ=w.savedJ;pre.value=w.pre;
@@ -67,7 +90,7 @@ function switchMode(m){if(m==mode)return;
  if(m=='practice'&&!WS.practice){newExercise();return}
  WS[mode]=wsSave();mode=m;wsLoad(WS[m]);WS[m]=null}
 function newExercise(id){id=id||$('pex').value;const d=exerciseDef(id);if(mode!='practice'){WS[mode]=wsSave();mode='practice'}
- S={els:[],objs:[],rays:[],lines:[]};uid=1;Object.assign(hist,{u:[],r:[],cur:null,key:null,t:0});Object.assign(view,HOME);practice=null;curId=null;curName=null;savedJ=null;drag=null;LP=null;par=null;TR=null;
+ S={els:[],objs:[],rays:[],lines:[]};uid=1;Object.assign(hist,{u:[],r:[],cur:null,key:null,t:0});Object.assign(view,HOME);practice=null;curId=null;curName=null;savedJ=null;drag=null;LP=null;par=null;TR=null;pSel=null;parL=null;
  $('fp').checked=false;$('pl').checked=false;buildExercise(d);startPractice(d.task,id)}
 function nextExercise(){const id=practice?practice.ex:$('pex').value,d=exerciseDef(id);if(d.rand){newExercise(id);return}
  const list=EX.filter(e=>(e.grp||e.task)==(d.grp||d.task));newExercise(list[(list.findIndex(e=>e.id==id)+1)%list.length].id)}
@@ -75,9 +98,9 @@ $('mSand').onclick=()=>switchMode('sandbox');$('mPrac').onclick=()=>switchMode('
 function pracUI(){const on=!!practice;document.body.classList.toggle('practice',on);
  [['mSand',!on],['mPrac',on]].forEach(([id,v])=>{$(id).classList.toggle('on',v);$(id).setAttribute('aria-selected',v)});
  const img=on&&practice.task=='image';setDis('[data-tool=mark]',!img);document.querySelectorAll('[data-tool=mark]').forEach(b=>b.title=img?'Mark answer (X)':'Mark answer (X): only in the "find the image" exercise');
- if(on)$('pex').value=practice.ex;document.querySelectorAll('[data-act=hint] .t').forEach(e=>e.textContent='Hint ('+(on?practice.hint:0)+'/3)');
+ if(on)$('pex').value=practice.ex;document.querySelectorAll('[data-act=hint] .t').forEach(e=>e.textContent='Hint ('+(on?practice.hint:0)+'/3)');document.querySelectorAll('[data-act=show] .t').forEach(e=>e.textContent=on&&practice.revealed?'Hide solution':'Show solution');
  const f=$('pfb');f.innerHTML='';if(!on)return;
- $('ptask').textContent=practice.task=='image'?`Find the image of ${S.objs[0]&&S.objs[0].ext?'B':'A'}: draw at least two rays with Line or Construct, mark where they meet with Mark, then Check.`:'Construct the ray that emerges'+(S.els.length>1?' from each element in turn':'')+', starting where the given ray meets the element, then Check.';const add=(c,t)=>{const d=document.createElement('div');d.style.cssText='margin:3px 0;color:'+({ok:'#2a9d4a',bad:'#e04b4b',warn:'#c98a00',hint:'inherit'}[c]);d.textContent=({ok:'\u2713 ',bad:'\u2717 ',warn:'! ',hint:'\u2139 '}[c])+t;f.appendChild(d)};
+ $('ptask').textContent=practice.task=='image'?`Find the image of ${S.objs[0]&&S.objs[0].ext?'B':'A'}: draw at least two rays with Line or Construct, mark where they meet with Mark, then Check.`:'Construct the ray that emerges'+(S.els.length>1?' from each element in turn':'')+', starting where the given ray meets the element, then Check.';if(fHidden())$('ptask').textContent+=' F is not drawn: finding it from the guideline ray is part of the task.';const add=(c,t)=>{const d=document.createElement('div');d.style.cssText='margin:3px 0;color:'+({ok:'#2a9d4a',bad:'#e04b4b',warn:'#c98a00',hint:'inherit'}[c]);d.textContent=({ok:'\u2713 ',bad:'\u2717 ',warn:'! ',hint:'\u2139 '}[c])+t;f.appendChild(d)};
  if(practice.revealed)add('hint','Solution shown: the traced rays and the image are now visible.');if(practice.hintTxt)add('hint',practice.hintTxt);(practice.fb||[]).forEach(([c,t])=>add(c,t))}
 ['vall','fp','pl','pp'].forEach(i=>$(i).onchange=draw);
 addEventListener('resize',draw);

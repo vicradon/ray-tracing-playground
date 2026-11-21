@@ -83,7 +83,7 @@ const PUP_HINTS = [
 {
   const ev0 = evaluate, hint0 = hintStep, msg0 = practiceMsg, ui0 = pracUI, start0 = startPractice, build0 = buildExercise;
   evaluate = function () { if (practice && practice.task == 'pupils') { const r = evalPupils(); practice.fb = r.fb; pracUI(); toast(r.ok ? 'Correct!' : 'Not yet, see the feedback'); emitResult(r); return; } ev0(); };
-  hintStep = function () { if (practice && practice.task == 'pupils') { practice.hint = Math.min(3, practice.hint + 1); practice.hintTxt = PUP_HINTS[practice.hint - 1]; pracUI(); draw(); return; } hint0(); };
+  hintStep = function () { if (practice && practice.task == 'pupils') { practice.hintTxt = nextHint() ? PUP_HINTS[practice.hint - 1] : ''; pracUI(); draw(); return; } hint0(); };
   practiceMsg = function () { return practice && practice.task == 'pupils' ? exTitle(practice.ex) + '\nPractice: locate the other pupils from the given one (red). Place each with the Pupil tool: tap where its upper edge goes (it is drawn symmetric about the axis). Construction lines help. Then Check.' : msg0(); };
   pracUI = function () { ui0(); if (practice && practice.task == 'pupils') $('ptask').textContent = 'Locate the ' + (srt().length > 1 ? 'other ' : '') + 'pupils from the given one: place each with the Pupil tool (tap its upper edge), then Check.'; setDis('[data-tool=pupil]', !(practice && practice.task == 'pupils')); };
   startPractice = function (task, ex) { if (task == 'pupils') { S.lines = []; practice = { task, ex, rid: null, revealed: false, hint: 0, ans: null, pups: [], fb: [], hintTxt: '' }; setTool('pupil'); panel(); draw(); return; } start0(task, ex); };

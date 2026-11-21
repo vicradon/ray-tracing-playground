@@ -20,12 +20,8 @@ const CTRL={
  preset:{select:'pre'},
  task:{select:'pex',tip:'Choose the exercise',opts:EXOPTS,change:()=>newExercise($('pex').value)},
  hint:{act:'hint',id:'pHint',text:'Hint (0/3)',run:()=>hintStep()},
- show:{act:'show',text:'Show solution',run:()=>{if(practice){if(!practice.revealed){ // the solution rays only exist once revealed
-   if(practice.task=='image'){if(!S.rays.length)S.objs.forEach((_,i)=>principal(i))}
-   else if(practice.task=='ray'&&!S.rays.some(q=>q.aim.k=='guide'))addRay(-1,{k:'guide',ref:practice.rid});
-   else if(practice.task=='focal'&&!S.rays.length){const r=addRay(-1,{k:'hit',h:3});r.y0=3;$('pp').checked=true}}
-  practice.revealed=true;pracUI();draw()}}},
- clear:{act:'clear',text:'Clear',tip:'Clear my constructions and answer',run:()=>{S.lines=[];if(practice){practice.ans=null;practice.pups=[];practice.fb=[]}panel();draw()}},
+ show:{act:'show',text:'Show solution',run:()=>toggleSolution()},
+ clear:{act:'clear',text:'Clear',tip:'Clear my constructions and answer',run:()=>{S.lines=[];clearPar();if(practice){practice.ans=null;practice.pups=[];practice.fb=[]}panel();draw()}},
  next:{act:'next',text:'Next',tip:'Next exercise in this group (a random group draws a new one)',run:()=>nextExercise()},
  evaluate:{act:'eval',text:'Check',tip:'Check my construction (E)',cls:'primary',run:()=>evaluate()},
  addb:{act:'addsheet',label:'Add',cls:'addb',tip:'Add a lens, mirror, object or ray',icon:svg('<path d="M12 5v14M5 12h14"/>'),run:()=>openSheet()},

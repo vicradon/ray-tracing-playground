@@ -28,7 +28,7 @@ const FOCAL_HINTS = [
 {
   const ev0 = evaluate, hint0 = hintStep, msg0 = practiceMsg, ui0 = pracUI, start0 = startPractice;
   evaluate = function () { if (practice && practice.task == 'focal') { const r = evalFocal(); practice.fb = r.fb; pracUI(); toast(r.ok ? 'Correct!' : 'Not yet, see the feedback'); emitResult(r); return; } ev0(); };
-  hintStep = function () { if (practice && practice.task == 'focal') { practice.hint = Math.min(3, practice.hint + 1); practice.hintTxt = FOCAL_HINTS[practice.hint - 1]; pracUI(); draw(); return; } hint0(); };
+  hintStep = function () { if (practice && practice.task == 'focal') { practice.hintTxt = nextHint() ? FOCAL_HINTS[practice.hint - 1] : ''; pracUI(); draw(); return; } hint0(); };
   practiceMsg = function () { return practice && practice.task == 'focal' ? exTitle(practice.ex) + '\nPractice: locate the image focal point F′ of the system (Mark tool) and give its focal length f′ (' + fUnit() + '), then Check.' : msg0(); };
   startPractice = function (task, ex) { if (task == 'focal') { S.lines = []; practice = { task, ex, rid: null, revealed: false, hint: 0, ans: null, fval: '', fb: [], hintTxt: '' }; $('pp').checked = false; setTool('line'); panel(); draw(); return; } start0(task, ex); };
   pracUI = function () {

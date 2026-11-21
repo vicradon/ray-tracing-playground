@@ -1,10 +1,11 @@
 // Embed mode: ?embed=1&ex=<exercise id> shows one practice exercise and nothing else (no sandbox, menus or
 // exercise picker), for a page that hosts the playground in a frame (Margin's Drills). The host drives it with
 // messages and hears back:
-//   host -> playground  {type:'check'} | {type:'hint'} | {type:'reveal'} | {type:'clear'} | {type:'load', ex}
+//   host -> playground  {type:'check'} | {type:'hint'} | {type:'reveal'} | {type:'hide'} | {type:'clear'} | {type:'load', ex}
 //   playground -> host  {source:'optics-playground', type:'ready', ex}
 //                       {source:'optics-playground', type:'result', ex, ok, fb:[[kind, text]], revealed}
 //                       {source:'optics-playground', type:'size', h}   (content height, to size the frame)
+//                       {source:'optics-playground', type:'reveal', ex, shown}   (Show / Hide solution, from either side)
 // It also works on its own (open the address), with its own Check, Hint and Show solution buttons.
 const EMBED = (() => { const q = new URLSearchParams(location.search); return q.get('embed') == '1' ? { ex: q.get('ex') || '', host: q.get('host') || '' } : null; })();
 const toHost = (m) => { if (EMBED && parent !== window) parent.postMessage({ source: 'optics-playground', ...m }, '*'); };
@@ -32,7 +33,8 @@ if (EMBED) {
     const m = e.data; if (!m || typeof m != 'object' || e.source !== parent) return;
     if (m.type == 'check') evaluate();
     else if (m.type == 'hint') hintStep();
-    else if (m.type == 'reveal') document.querySelector('[data-act=show]').click();
+    else if (m.type == 'reveal') toggleSolution(true);
+    else if (m.type == 'hide') toggleSolution(false);
     else if (m.type == 'clear') document.querySelector('[data-act=clear]').click();
     else if (m.type == 'load' && EX.find((x) => x.id == m.ex)) newExercise(m.ex);
   });

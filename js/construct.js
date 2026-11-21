@@ -1,7 +1,7 @@
 // Construction lines and snapping
 // ---- construction lines, snapping, practice mode
 const delLine=l=>{S.lines=S.lines.filter(q=>q!==l)};
-function lineMenu(id){const l=S.lines.find(q=>q.id==id);if(!l)return null;const n=S.lines.indexOf(l)+1;return[{l:(l.k=='bold'?'Bold line ':'Construction line ')+n,h:1},{l:l.k=='bold'?'Make construction (dotted)':'Make bold',f:()=>{l.k=l.k=='bold'?'cons':'bold'}},{l:'Colour',h:1},{sws:LINE_COLORS,cur:l.c||LC,f:c=>{if(c==LC)delete l.c;else l.c=c}},{sep:1},{l:'Draw parallel',f:()=>startParLine(l.a,l.b)},{l:l.vis?'Hide line':'Show line',f:()=>{l.vis=!l.vis}},{l:'Remove line',f:()=>delLine(l)}]}
+function lineMenu(id){const l=S.lines.find(q=>q.id==id);if(!l)return null;const n=S.lines.indexOf(l)+1;return[{l:(l.k=='bold'?'Bold line ':'Construction line ')+n,h:1},{l:l.k=='bold'?'Make construction (dotted)':'Make bold',f:()=>{l.k=l.k=='bold'?'cons':'bold'}},{l:'Colour',h:1},{sws:LINE_COLORS,cur:l.c||LC,f:c=>{if(c==LC)delete l.c;else l.c=c}},{sep:1},{l:'Parallel',f:()=>startParLine(l.a,l.b)},{l:l.vis?'Hide line':'Show line',f:()=>{l.vis=!l.vis}},{l:'Remove line',f:()=>delLine(l)}]}
 function sInter(a,b){const r=[a[2]-a[0],a[3]-a[1]],q=[b[2]-b[0],b[3]-b[1]],d=r[0]*q[1]-r[1]*q[0];if(Math.abs(d)<1e-9)return null;const t=((b[0]-a[0])*q[1]-(b[1]-a[1])*q[0])/d,u=((b[0]-a[0])*r[1]-(b[1]-a[1])*r[0])/d;return t>=0&&t<=1&&u>=0&&u<=1?{x:a[0]+t*r[0],y:a[1]+t*r[1]}:null}
 const rnd4=v=>Math.round(v*1e4)/1e4;
 const rayVis=r=>r.vis&&$('vall').checked&&(!practice||practice.revealed||(practice.task=='ray'&&r.id==practice.rid)); // rays the student can see (in practice: only the given ray until the solution is shown)
@@ -50,12 +50,14 @@ function drawExtras(hnd,E,ax){
   if(l.k=='bold')ln(l.a.x,l.a.y,l.b.x,l.b.y,lc,3.2);else{cx.globalAlpha=.9;ln(l.a.x-ux*FAR,l.a.y-uy*FAR,l.b.x+ux*FAR,l.b.y+uy*FAR,lc,2.1,[1.6,5]);cx.globalAlpha=1}
   [l.a,l.b].forEach(q=>{cx.beginPath();cx.fillStyle=lc;cx.arc(X(q.x),Y(q.y),3.5*dpr,0,7);cx.fill()});txo(String(i+1),(l.a.x+l.b.x)/2,(l.a.y+l.b.y)/2,.1,.4,lc,13);
   hnd.push({k:'lp',id:l.id,end:'a',x:l.a.x,y:l.a.y},{k:'lp',id:l.id,end:'b',x:l.b.x,y:l.b.y})});
+ drawParSel();
  if(!exporting&&parL&&S.pl){const n=Math.hypot(parL.dx,parL.dy)||1,ux=parL.dx/n,uy=parL.dy/n;cx.globalAlpha=.7;ln(S.pl.x-ux*FAR,S.pl.y-uy*FAR,S.pl.x+ux*FAR,S.pl.y+uy*FAR,LC,2.1,[1.6,5]);cx.globalAlpha=1}
+ if(!exporting&&drag&&drag.k=='lp'){const l=S.lines.find(q=>q.id==drag.id);if(l&&l.k=='bold'){const dx=l.b.x-l.a.x,dy=l.b.y-l.a.y,n=Math.hypot(dx,dy)||1;cx.globalAlpha=.55;ln(l.a.x-dx/n*FAR,l.a.y-dy/n*FAR,l.b.x+dx/n*FAR,l.b.y+dy/n*FAR,l.c||LC,1.4,[1.6,5]);cx.globalAlpha=1}} // the direction it can be extended along
  if(!exporting&&(tool=='line'||tool=='cons')&&LP){if(S.pl){const dx=S.pl.x-LP.x,dy=S.pl.y-LP.y,n=Math.hypot(dx,dy);if(n>1e-6){const ux=dx/n,uy=dy/n;if(tool=='cons'){cx.globalAlpha=.7;ln(LP.x-ux*FAR,LP.y-uy*FAR,S.pl.x+ux*FAR,S.pl.y+uy*FAR,LC,2.1,[1.6,5]);cx.globalAlpha=1}else{cx.globalAlpha=.7;ln(LP.x,LP.y,S.pl.x,S.pl.y,LC,3.2);cx.globalAlpha=1}}}
   cx.beginPath();cx.fillStyle=LC;cx.arc(X(LP.x),Y(LP.y),4.5*dpr,0,7);cx.fill()}
  if(practice&&!practice.revealed&&practice.hint>=2){
-  if(practice.task=='image')principalList(0).slice(0,practice.hint>=3?9:1).forEach(r=>{const tr=trace(r);if(tr){cx.globalAlpha=.4;drawTrace(tr,'#e08a00',[5,3],null,aimTarget(r));cx.globalAlpha=1}});
-  else{const r=S.rays.find(q=>q.id==practice.rid);if(r&&srt()[0]){cx.globalAlpha=.45;E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t=='L')ln(e.x+e.f,-6.5,e.x+e.f,6.5,ax,1,[2,4])});
-   const tg=trace({id:-200,src:-1,aim:{k:'guide',ref:r.id},y0:0});if(tg)drawTrace(tg,COL.guide,[6,4],null);
-   if(practice.hint>=3){const tr=trace(r);if(tr){const f=tr.T,p0=f.pts[0],d=f.pts.length>1?{x:f.pts[1].x-p0.x,y:f.pts[1].y-p0.y}:{x:f.fin.dx,y:f.fin.dy},n=Math.hypot(d.x,d.y);ln(p0.x-d.x/n*30,p0.y-d.y/n*30,p0.x+d.x/n*30,p0.y+d.y/n*30,'#e08a00',1.6,[5,3])}}cx.globalAlpha=1}}}
+  if(practice.task=='image')principalList(0).slice(0,practice.hint==3?9:1).forEach(r=>{const tr=trace(r);if(tr){cx.globalAlpha=.4;drawTrace(tr,'#e08a00',[5,3],null,aimTarget(r));cx.globalAlpha=1}});
+  else{const r=S.rays.find(q=>q.id==practice.rid);if(r&&srt()[0]){cx.globalAlpha=.45;if(practice.hint==2){E.forEach(e=>{ln(e.x-e.f,-6.5,e.x-e.f,6.5,ax,1,[2,4]);if(e.t=='L')ln(e.x+e.f,-6.5,e.x+e.f,6.5,ax,1,[2,4])});
+   const tg=trace({id:-200,src:-1,aim:{k:'guide',ref:r.id},y0:0});if(tg)drawTrace(tg,COL.guide,[6,4],null)}
+   if(practice.hint==3){const tr=trace(r);if(tr){const f=tr.T,p0=f.pts[0],d=f.pts.length>1?{x:f.pts[1].x-p0.x,y:f.pts[1].y-p0.y}:{x:f.fin.dx,y:f.fin.dy},n=Math.hypot(d.x,d.y);ln(p0.x-d.x/n*30,p0.y-d.y/n*30,p0.x+d.x/n*30,p0.y+d.y/n*30,'#e08a00',1.6,[5,3])}}cx.globalAlpha=1}}}
  if(practice&&practice.ans){const a=practice.ans,u=9*dpr;cx.beginPath();cx.strokeStyle='#e08a00';cx.fillStyle='rgba(224,138,0,.25)';cx.lineWidth=2*dpr;cx.moveTo(X(a.x),Y(a.y)-u);cx.lineTo(X(a.x)+u,Y(a.y));cx.lineTo(X(a.x),Y(a.y)+u);cx.lineTo(X(a.x)-u,Y(a.y));cx.closePath();cx.fill();cx.stroke();txo('answer',a.x,a.y,.3,.55,'#e08a00',14);hnd.push({k:'ans',x:a.x,y:a.y})}}
