@@ -37,7 +37,23 @@ if (EMBED) {
     else if (m.type == 'load' && EX.find((x) => x.id == m.ex)) newExercise(m.ex);
   });
   addEventListener('resize', sendSize);
+  if (d) heightGrip(d);
   toHost({ type: 'ready', ex: d ? d.id : null }); sendSize();
+}
+// A grip under the canvas: drag it down for a taller window (more squares above and below the axis), double tap
+// for the exercise's own height. Remembered per exercise on this device.
+function heightGrip(d) {
+  const base = d.h || 14, key = 'optics.embedH.' + d.id, MAX = 40;
+  const setH = (h) => { h = Math.max(base, Math.min(MAX, h)); const dh = h - H; if (Math.abs(dh) < 1e-6) return; H = h; view.y0 += dh / 2 / view.z; draw(); sendSize(); };
+  try { const v = +localStorage.getItem(key); if (v > base) setH(v); } catch (e) {}
+  const save = () => { try { if (H > base + 1e-6) localStorage.setItem(key, String(H)); else localStorage.removeItem(key); } catch (e) {} };
+  const g = mk('div', 'hgrip'); g.title = 'Drag to make the canvas taller · double tap to reset'; g.setAttribute('role', 'separator'); g.setAttribute('aria-label', 'Canvas height'); g.innerHTML = '<i></i>';
+  document.querySelector('.cvw').after(g);
+  let st = null, lastTap = 0;
+  g.addEventListener('pointerdown', (e) => { e.preventDefault(); g.setPointerCapture(e.pointerId); st = { y: e.clientY, h: H, moved: false }; g.classList.add('on'); });
+  g.addEventListener('pointermove', (e) => { if (!st) return; const dy = e.clientY - st.y; if (Math.abs(dy) > 3) st.moved = true; setH(st.h + dy * W / cv.clientWidth); });
+  const end = () => { if (!st) return; const tap = !st.moved; st = null; g.classList.remove('on'); if (tap) { const now = Date.now(); if (now - lastTap < 350) { setH(base); lastTap = 0; } else lastTap = now; } save(); };
+  g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
 }
 // ---- Apple Pencil and touch on the canvas (all modes)
 // iOS treats a pen on the page as scrolling or as Scribble (handwriting to text) unless the touch events are
