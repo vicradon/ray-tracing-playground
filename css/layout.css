@@ -264,3 +264,6 @@ body.embed .tb .ehist { gap: 0; }
 body.embed .tb .ehist button { width: 42px; }
 body.embed .cvw { max-width: none !important; margin: 0; }
 body.embed .stage { width: 100%; }
+/* Draw parallel: what to do next, over the top of the canvas (the zoom sits at the bottom) */
+.partip { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); display: none; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--bd); box-shadow: 0 2px 10px rgba(0,0,0,.12); font-size: 13px; white-space: nowrap; z-index: 5; }
+.partip button { border: 0; border-radius: 999px; padding: 5px 12px; background: var(--grid); font-size: 13px; }

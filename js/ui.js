@@ -20,7 +20,7 @@ function selTarget(){if(!sel||sel.m!==mode)return null;
 let tapS=null;
 cv.addEventListener('pointerdown',ev=>{tapS=ev.isPrimary&&ev.button==0?{x:ev.clientX,y:ev.clientY,id:ev.pointerId,t:Date.now()}:null},{capture:true});
 cv.addEventListener('pointermove',ev=>{if(tapS&&(ev.pointerId!=tapS.id||Math.hypot(ev.clientX-tapS.x,ev.clientY-tapS.y)>8))tapS=null},{capture:true});
-cv.addEventListener('pointerup',ev=>{const t=tapS;tapS=null;if(!t||ev.pointerId!=t.id||Date.now()-t.t>600||tool!='move'||par||Date.now()-lpAt<800)return;
+cv.addEventListener('pointerup',ev=>{const t=tapS;tapS=null;if(!t||ev.pointerId!=t.id||Date.now()-t.t>600||tool!='move'||par||parL||Date.now()-lpAt<800)return;
  const p=wp(ev);setTimeout(()=>tapSelect(p),0)},{capture:true});
 function tapSelect(p){let h=hitAt(p);if(practice&&h&&h.k!='line')h=null;
  select(!h?null:h.k=='pup'?{k:'pup'}:h.k=='obj'?{k:'obj',i:h.i}:h.k=='el'?{k:'el',id:h.e.id}:h.k=='ray'?{k:'ray',id:h.r.id}:{k:'line',id:h.l.id})}

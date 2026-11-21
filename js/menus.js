@@ -13,7 +13,8 @@ function showMenu(ev,items){ctx.innerHTML='';items.forEach(it=>{if(it.sep){ctx.a
 cv.oncontextmenu=ev=>{ev.preventDefault();
  if(ev.touch||ev.pointerType=='touch'||tps.size){if(Date.now()-lpAt<1000)return;lpAt=Date.now();cancelGesture();if(navigator.vibrate)navigator.vibrate(12)} // long press: our timer or the browser's own, whichever comes first
  const p=wp(ev);let items=null;
- if(practice){const ho=(S.hnd||[]).find(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)),l=ho&&ho.k=='lp'?S.lines.find(q=>q.id==ho.id):S.lines.find(q=>lineHit(q,p,.3));if(l)showMenu(ev,lineMenu(l.id));else if(ho&&ho.k=='ans')showMenu(ev,[{l:'Answer marker',h:1},{l:'Remove marker',f:()=>{practice.ans=null}}]);return}
+ if(practice){const ho=(S.hnd||[]).find(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)),l=ho&&ho.k=='lp'?S.lines.find(q=>q.id==ho.id):S.lines.find(q=>lineHit(q,p,.3));const g=!l&&(S.given||[]).find(g=>dseg(p,[g.a.x,g.a.y,g.b.x,g.b.y])<tol(.3));
+ if(l)showMenu(ev,lineMenu(l.id));else if(g)showMenu(ev,[{l:'Guideline',h:1},{l:'Draw parallel',f:()=>startParLine(g.a,g.b)}]);else if(ho&&ho.k=='ans')showMenu(ev,[{l:'Answer marker',h:1},{l:'Remove marker',f:()=>{practice.ans=null}}]);return}
  const ho=(S.hnd||[]).filter(h=>Math.hypot(h.x-p.x,h.y-p.y)<tol(.6)).sort((a,b)=>(a.k=='obj'?0:1)-(b.k=='obj'?0:1))[0];
  if(ho&&ho.k=='obj'){const i=ho.i,o=S.objs[i];items=[{l:(o.ext?'Arrow':'Point')+' object',h:1},{l:'Add principal rays',f:()=>principal(i)},{l:o.ext?'Make point object':'Make arrow object',f:()=>{o.ext=!o.ext;if(o.ext&&Math.abs(o.y)<.1)o.y=3}},{l:'Remove object',f:()=>delObj(i)}]}
  else if(ho&&ho.k=='lp'){items=lineMenu(ho.id)}else if(ho){const r=S.rays.find(q=>q.id==ho.id);items=r?rayMenu(r):null}
@@ -37,5 +38,5 @@ function commit(){const j=ser();if(hist.cur===null){hist.cur=j;updBtns();return}
 function restore(j){const o=JSON.parse(j);S.els=o.els;S.objs=o.objs;S.rays=o.rays;S.lines=o.lines||[];S.pupil=o.pupil||null;uid=o.uid;S.prev=null;par=null;hist.cur=j;hist.key=null;panel();draw();updBtns()}
 function undo(){if(!hist.u.length)return;hist.r.push(hist.cur);restore(hist.u.pop())}
 function redo(){if(!hist.r.length)return;hist.u.push(hist.cur);restore(hist.r.pop())}
-addEventListener('keydown',e=>{if(e.key=='Escape'){ctx.style.display='none';if(par){par=null;S.prev=null;S.snapPt=null;draw()}}
+addEventListener('keydown',e=>{if(e.key=='Escape'){ctx.style.display='none';if(parL)endParLine();if(par){par=null;S.prev=null;S.snapPt=null;draw()}}
  const k=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&!/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){if(k=='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(k=='y'){e.preventDefault();redo()}}});
